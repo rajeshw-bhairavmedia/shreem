@@ -1,0 +1,135 @@
+import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { site } from '../config/site'
+import { useCart } from '../context/CartContext'
+import { shopifyEnabled } from '../lib/shopify'
+import { formatPrice } from '../lib/utils'
+
+export default function CartDrawer() {
+  const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal, checkout, orderOnWhatsApp } = useCart()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeCart()
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, closeCart])
+
+  const handleCheckout = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      await checkout()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remaining = site.freeShippingAbove - subtotal
+
+  return (
+    <div
+      className={`fixed inset-0 z-[60] transition-all duration-300 ${
+        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+      aria-hidden={!isOpen}
+    >
+      <div className="absolute inset-0 bg-shreem-black/30 backdrop-blur-sm" onClick={closeCart} />
+      <aside
+        className={`absolute top-0 right-0 h-full w-full max-w-md bg-shreem-cream shadow-2xl flex flex-col transition-transform duration-500 ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-label="Shopping cart"
+      >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-shreem-black/10">
+          <h2 className="text-lg font-display font-bold uppercase tracking-tight">Your Cart</h2>
+          <button onClick={closeCart} className="p-2 hover:bg-shreem-black/5 rounded-full transition-colors" aria-label="Close cart">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {lines.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+            <ShoppingBag className="w-12 h-12 text-shreem-gold mb-4" />
+            <p className="text-shreem-gray mb-6">Your cart is empty.</p>
+            <Link to="/collections" onClick={closeCart} className="btn-primary">
+              Shop the Collection
+            </Link>
+          </div>
+        ) : (
+          <>
+            <ul className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-shreem-black/10">
+              {lines.map((line) => (
+                <li key={line.key} className="flex gap-4 py-4">
+                  <Link to={`/product/${line.productId}`} onClick={closeCart} className="w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-white">
+                    <img src={line.image} alt={line.name} className="w-full h-full object-cover" />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link to={`/product/${line.productId}`} onClick={closeCart} className="font-medium text-sm hover:text-shreem-gold transition-colors">
+                        {line.name}
+                      </Link>
+                      <button onClick={() => removeLine(line.key)} className="p-1 text-shreem-gray hover:text-red-500 transition-colors" aria-label={`Remove ${line.name}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-shreem-gray mt-1">
+                      {[line.size, line.color].filter(Boolean).join(' / ')}
+                    </p>
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center border border-shreem-black/10 rounded-lg">
+                        <button onClick={() => setQuantity(line.key, line.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-shreem-black/5" aria-label="Decrease quantity">
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-8 text-center text-sm font-medium">{line.quantity}</span>
+                        <button onClick={() => setQuantity(line.key, line.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-shreem-black/5" aria-label="Increase quantity">
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <span className="text-sm font-semibold">{formatPrice(line.price * line.quantity)}</span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="px-6 py-5 border-t border-shreem-black/10 bg-white/60">
+              <p className="text-xs text-shreem-gray mb-3">
+                {remaining > 0
+                  ? `Add ${formatPrice(remaining)} more for free shipping.`
+                  : 'Your order ships free.'}
+              </p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-shreem-gray">Subtotal</span>
+                <span className="text-lg font-semibold">{formatPrice(subtotal)}</span>
+              </div>
+              <p className="text-xs text-shreem-gray mb-4">
+                {shopifyEnabled
+                  ? 'Shipping and taxes calculated at checkout.'
+                  : "We'll confirm availability and delivery on WhatsApp."}
+              </p>
+              {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+              <button onClick={handleCheckout} disabled={busy} className="w-full btn-gold disabled:opacity-60">
+                {busy ? 'Starting checkout…' : shopifyEnabled ? 'Checkout' : 'Order on WhatsApp'}
+              </button>
+              {shopifyEnabled && (
+                <button onClick={orderOnWhatsApp} className="w-full mt-3 text-sm text-shreem-gray hover:text-shreem-black transition-colors">
+                  or order on WhatsApp
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
+  )
+}

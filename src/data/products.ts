@@ -1,0 +1,118 @@
+import type { Product } from '../types'
+
+// Local catalog, used until a Shopify store is connected (see README).
+export const localProducts: Product[] = [
+  {
+    id: 'ivory-chikankari-kurta',
+    name: 'Ivory Chikankari Kurta',
+    description:
+      'Handcrafted Chikankari embroidery on premium cotton. This elegant kurta features intricate floral motifs and a comfortable fit, perfect for both casual and semi-formal occasions.',
+    price: 2499,
+    originalPrice: 2999,
+    category: 'women',
+    subcategory: 'casual',
+    images: ['/product_kurta_1.jpg'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    colors: ['Ivory', 'Peach', 'Mint'],
+    isBestseller: true,
+    available: true,
+  },
+  {
+    id: 'royal-blue-zardozi-kurta-set',
+    name: 'Royal Blue Zardozi Kurta Set',
+    description:
+      'Exquisite zardozi work on silk blend fabric. This royal blue kurta comes with matching bottom and dupatta, ideal for weddings and festive celebrations.',
+    price: 5999,
+    originalPrice: 7499,
+    category: 'occasion',
+    subcategory: '',
+    images: ['/product_kurta_2.jpg'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    colors: ['Royal Blue', 'Maroon', 'Emerald'],
+    isNew: true,
+    available: true,
+  },
+  {
+    id: 'maroon-silk-kurta',
+    name: 'Maroon Silk Kurta',
+    description:
+      'Pure silk kurta with minimal embroidery. A timeless piece that combines traditional craftsmanship with contemporary design.',
+    price: 3499,
+    category: 'men',
+    subcategory: 'traditional',
+    images: ['/product_kurta_3.jpg'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL', '3XL'],
+    colors: ['Maroon', 'Navy', 'Black'],
+    isBestseller: true,
+    available: true,
+  },
+  {
+    id: 'olive-banarasi-dupatta',
+    name: 'Olive Banarasi Dupatta',
+    description:
+      'Handwoven Banarasi dupatta with intricate gold zari work. A versatile accessory that elevates any outfit.',
+    price: 1899,
+    originalPrice: 2299,
+    category: 'women',
+    subcategory: 'traditional',
+    images: ['/product_dupatta_1.jpg'],
+    sizes: ['Free Size'],
+    colors: ['Olive', 'Red', 'Gold'],
+    isSale: true,
+    available: true,
+  },
+  {
+    id: 'black-embroidered-kurta',
+    name: 'Black Embroidered Kurta',
+    description:
+      'Sophisticated black kurta with silver thread embroidery. Perfect for evening events and special occasions.',
+    price: 4299,
+    category: 'men',
+    subcategory: 'formal',
+    images: ['/product_kurta_4.jpg'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
+    colors: ['Black', 'White', 'Grey'],
+    isNew: true,
+    available: true,
+  },
+  {
+    id: 'sage-green-anarkali',
+    name: 'Sage Green Anarkali',
+    description:
+      'Flowing anarkali suit with delicate floral embroidery. The flattering silhouette and soft fabric make it perfect for all-day wear.',
+    price: 4999,
+    originalPrice: 5999,
+    category: 'women',
+    subcategory: 'traditional',
+    images: ['/product_anarkali_1.jpg'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    colors: ['Sage', 'Peach', 'Lavender'],
+    isBestseller: true,
+    available: true,
+  },
+  {
+    id: 'ivory-palazzo-pants',
+    name: 'Ivory Palazzo Pants',
+    description:
+      'Comfortable and stylish palazzo pants in premium fabric. Features an elasticated waist for the perfect fit.',
+    price: 1299,
+    category: 'women',
+    subcategory: 'casual',
+    images: ['/product_bottom_1.jpg'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    colors: ['Ivory', 'Black', 'Beige'],
+    isNew: true,
+    available: true,
+  },
+]
+
+// Product URLs on the previous site used numeric IDs (/product/3).
+export const legacyProductIds: Record<string, string> = {
+  '1': 'ivory-chikankari-kurta',
+  '2': 'royal-blue-zardozi-kurta-set',
+  '3': 'maroon-silk-kurta',
+  '4': 'olive-banarasi-dupatta',
+  '5': 'black-embroidered-kurta',
+  '6': 'sage-green-anarkali',
+  '7': 'ivory-palazzo-pants',
+}
