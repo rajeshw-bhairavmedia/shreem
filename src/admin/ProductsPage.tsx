@@ -32,11 +32,24 @@ export default function ProductsPage() {
     load()
   }, [])
 
-  const toggleActive = async (p: ProductRow) => {
-    const { error } = await supabase.from('products').update({ is_active: !p.is_active }).eq('id', p.id)
-    if (error) setError(error.message)
-    else load()
+  type Flag = 'is_active' | 'is_new' | 'is_bestseller' | 'is_trending'
+
+  // Flip a yes/no setting straight from the list (updates instantly, reverts if saving fails).
+  const toggle = async (p: ProductRow, flag: Flag) => {
+    const value = !p[flag]
+    setProducts((list) => list?.map((x) => (x.id === p.id ? { ...x, [flag]: value } : x)) ?? null)
+    const { error } = await supabase.from('products').update({ [flag]: value }).eq('id', p.id)
+    if (error) {
+      setError(error.message)
+      load()
+    }
   }
+
+  const chips: { flag: Flag; label: string; on: string }[] = [
+    { flag: 'is_trending', label: 'Trending', on: 'bg-shreem-gold text-shreem-black' },
+    { flag: 'is_bestseller', label: 'Bestseller', on: 'bg-shreem-gold/30 text-shreem-black' },
+    { flag: 'is_new', label: 'New', on: 'bg-shreem-black text-white' },
+  ]
 
   return (
     <div>
@@ -72,10 +85,24 @@ export default function ProductsPage() {
                   <p className="text-xs text-shreem-gray capitalize">
                     {categoryNames[p.category]}
                     {p.style ? ` · ${p.style}` : ''}
-                    {p.is_new ? ' · New' : ''}
-                    {p.is_bestseller ? ' · Bestseller' : ''}
                   </p>
                   <p className={`text-xs mt-0.5 ${stock.tone}`}>{stock.label}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {chips.map((c) => (
+                      <button
+                        key={c.flag}
+                        onClick={() => toggle(p, c.flag)}
+                        aria-pressed={p[c.flag]}
+                        title={`${p[c.flag] ? 'Remove from' : 'Add to'} ${c.label}`}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                          p[c.flag] ? `${c.on} border-transparent` : 'border-shreem-black/15 text-shreem-gray hover:border-shreem-black/40'
+                        }`}
+                      >
+                        {p[c.flag] ? '✓ ' : '+ '}
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="text-right text-sm">
                   <div className="font-medium">{formatPrice(p.price)}</div>
@@ -84,7 +111,7 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => toggleActive(p)}
+                  onClick={() => toggle(p, 'is_active')}
                   className={`hidden sm:block px-3 py-1 rounded-full text-xs font-medium ${
                     p.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                   }`}

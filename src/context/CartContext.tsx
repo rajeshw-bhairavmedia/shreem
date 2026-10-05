@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { openWhatsApp, orderMessage } from '../lib/utils'
 import type { CartLine } from '../types'
 
 const STORAGE_KEY = 'shreem-cart'
@@ -15,7 +14,6 @@ interface CartState {
   setQuantity: (key: string, quantity: number) => void
   removeLine: (key: string) => void
   clear: () => void
-  orderOnWhatsApp: () => void
 }
 
 const CartContext = createContext<CartState | null>(null)
@@ -64,14 +62,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key))
   const clear = useCallback(() => setLines([]), [])
-  const orderOnWhatsApp = () => openWhatsApp(orderMessage(lines))
 
   const count = lines.reduce((n, l) => n + l.quantity, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.price * l.quantity, 0)
 
   return (
     <CartContext.Provider
-      value={{ lines, count, subtotal, isOpen, openCart, closeCart, addLine, setQuantity, removeLine, clear, orderOnWhatsApp }}
+      value={{ lines, count, subtotal, isOpen, openCart, closeCart, addLine, setQuantity, removeLine, clear }}
     >
       {children}
     </CartContext.Provider>

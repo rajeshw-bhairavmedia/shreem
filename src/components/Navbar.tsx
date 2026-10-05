@@ -10,7 +10,7 @@ const navLinks = [
   { label: 'Women', href: '/collections?category=women', sub: true },
   { label: 'Occasion Wear', href: '/collections?category=occasion' },
   { label: 'New Arrivals', href: '/collections?filter=new' },
-  { label: 'Lookbook', href: '/#lookbook' },
+  { label: 'Lookbook', href: '/lookbook' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ]

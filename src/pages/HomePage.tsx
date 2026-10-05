@@ -1,27 +1,19 @@
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowRight } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import LookSections from '../components/LookSections'
 import ProductCard from '../components/ProductCard'
 import { site } from '../config/site'
 import { useCatalog } from '../context/CatalogContext'
 import { categories } from '../data/categories'
+import { looks } from '../data/lookbook'
 import { formsEnabled, submitForm } from '../lib/utils'
 
 gsap.registerPlugin(ScrollTrigger)
 // Don't recalculate scroll animations when a phone's address bar shows/hides (causes jumps).
 ScrollTrigger.config({ ignoreMobileResize: true })
-
-const looks = [
-  { headline: 'VERSATILE STYLE', body: 'From morning meetings to evening plans—clean lines that work anywhere.', link: 'See styling notes', image: '/look_versatile.jpg', align: 'right' },
-  { headline: 'FOR EVERY MOMENT', body: 'Lightweight layers, effortless movement—designed to keep up with your day.', cta: 'Shop daily wear', image: '/look_every_moment.jpg', align: 'left' },
-  { headline: 'DESIGNED FOR MOVEMENT', body: 'Stretch-friendly fits, breathable fabrics, and details that stay clean on the go.', link: 'View performance details', image: '/look_movement.jpg', align: 'right' },
-  { headline: 'TIMELESS DESIGN', body: 'Minimal silhouettes, honest materials, and finishes that age beautifully.', cta: 'Explore essentials', image: '/look_timeless.jpg', align: 'left' },
-  { headline: 'QUALITY YOU CAN FEEL', body: 'Soft hand-feel, durable construction, and finishes that last wash after wash.', link: 'Read fabric care', image: '/look_quality.jpg', align: 'right' },
-  { headline: 'MADE FOR YOU', body: 'A fit that feels right and a look that stays true—no noise, just comfort.', cta: 'Find your size', image: '/look_made_for_you.jpg', align: 'left' },
-  { headline: 'FIND YOUR FIT', body: 'A range of sizes and fits designed to look good on real people—clean, modern, wearable.', cta: 'View size guide', image: '/look_find_your_fit.jpg', align: 'right' },
-] as const
 
 const instagramImages = [
   '/look_versatile.jpg',
@@ -33,7 +25,6 @@ const instagramImages = [
 ]
 
 export default function HomePage() {
-  const lookRefs = useRef<(HTMLElement | null)[]>([])
   const { products, loading } = useCatalog()
 
   useEffect(() => {
@@ -41,21 +32,6 @@ export default function HomePage() {
       gsap.fromTo('.hero-bg', { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out' })
       gsap.fromTo('.hero-headline-word', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, stagger: 0.05, ease: 'power2.out', delay: 0.3 })
       gsap.fromTo('.hero-subtext', { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power2.out', delay: 0.6 })
-
-      lookRefs.current.forEach((section, i) => {
-        if (!section) return
-        const fromRight = looks[i].align === 'right'
-        gsap.fromTo(
-          section.querySelector('.value-bg'),
-          { scale: 1.1, x: fromRight ? '-4vw' : '4vw' },
-          { scale: 1, x: 0, scrollTrigger: { trigger: section, start: 'top 80%', end: 'top 30%', scrub: 0.5 } },
-        )
-        gsap.fromTo(
-          section.querySelector('.value-content'),
-          { x: fromRight ? '12vw' : '-12vw', opacity: 0 },
-          { x: 0, opacity: 1, scrollTrigger: { trigger: section, start: 'top 75%', end: 'top 40%', scrub: 0.5 } },
-        )
-      })
     })
     return () => ctx.revert()
   }, [])
@@ -65,7 +41,7 @@ export default function HomePage() {
     if (!loading) ScrollTrigger.refresh()
   }, [loading])
 
-  const bestsellers = products.filter((p) => p.isBestseller).slice(0, 4)
+  const trending = products.filter((p) => p.isTrending).slice(0, 8)
   const newArrivals = products.filter((p) => p.isNew).slice(0, 6)
 
   return (
@@ -94,50 +70,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Lookbook */}
+      {/* Lookbook preview: 2 looks here, all of them on /lookbook */}
       <div id="lookbook">
-        {looks.map((look, i) => (
-          <section
-            key={look.headline}
-            ref={(el) => {
-              lookRefs.current[i] = el
-            }}
-            className="relative min-h-screen w-full overflow-hidden flex items-center"
-          >
-            <div className="value-bg absolute inset-0">
-              {/* Not lazy: these move with the scroll, so decode them before they arrive on screen. */}
-              <img src={look.image} alt={look.headline} decoding="async" className="w-full h-full object-cover" />
-              <div
-                className={`absolute inset-0 ${
-                  look.align === 'right' ? 'bg-gradient-to-l' : 'bg-gradient-to-r'
-                } from-shreem-cream/80 via-shreem-cream/40 to-transparent`}
-              />
-            </div>
-            <div
-              className={`value-content relative z-10 w-full px-6 sm:px-10 lg:px-20 py-20 ${
-                look.align === 'right' ? 'ml-auto text-right' : 'mr-auto text-left'
-              }`}
-              style={{ maxWidth: '600px' }}
-            >
-              <h2 className="section-heading text-shreem-black mb-6">{look.headline}</h2>
-              <p className="section-subheading mb-8">{look.body}</p>
-              {'cta' in look && (
-                <Link to="/collections" className="btn-outline">
-                  {look.cta}
-                </Link>
-              )}
-              {'link' in look && (
-                <Link
-                  to="/collections"
-                  className="inline-flex items-center text-shreem-black font-medium hover:text-shreem-gold transition-colors group"
-                >
-                  {look.link}
-                  <ArrowRight className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
-                </Link>
-              )}
-            </div>
-          </section>
-        ))}
+        <LookSections looks={looks.slice(0, 2)} />
+        <div className="py-16 lg:py-20 px-4 text-center">
+          <Link to="/lookbook" className="btn-primary">
+            View the Full Lookbook
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
+        </div>
       </div>
 
       {/* Shop by category */}
@@ -173,7 +114,7 @@ export default function HomePage() {
       </section>
 
       {/* Trending */}
-      {bestsellers.length > 0 && (
+      {trending.length > 0 && (
         <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-10 bg-white">
           <div className="flex items-end justify-between mb-12">
             <div>
@@ -186,7 +127,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-            {bestsellers.map((p) => (
+            {trending.map((p) => (
               <ProductCard key={p.id} product={p} badges={['bestseller']} />
             ))}
           </div>

@@ -29,6 +29,15 @@ export const site = {
   },
   instagramHandle: '@shreemlifestyle',
 
+  // Printed on GST invoices. TODO: your registered business details.
+  business: {
+    legalName: 'Shreem Lifestyle',
+    gstin: '', // TODO: your 15-character GSTIN
+    address: '123 Fashion Street, Koregaon Park, Pune, Maharashtra - 411001',
+    state: 'Maharashtra',
+    stateCode: '27',
+  },
+
   // Shipping charges are set in shared/store.ts.
   freeShippingAbove: FREE_SHIPPING_ABOVE,
 }

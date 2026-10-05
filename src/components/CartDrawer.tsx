@@ -4,11 +4,10 @@ import { Link } from 'react-router-dom'
 import { MAX_QUANTITY_PER_ITEM, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
-import { supabaseEnabled } from '../lib/supabase'
 import { formatPrice } from '../lib/utils'
 
 export default function CartDrawer() {
-  const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal, orderOnWhatsApp } = useCart()
+  const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal } = useCart()
 
   useEffect(() => {
     if (!isOpen) return
@@ -101,24 +100,11 @@ export default function CartDrawer() {
                 <span className="text-lg font-semibold">{formatPrice(subtotal)}</span>
               </div>
               <p className="text-xs text-shreem-gray mb-4">
-                {supabaseEnabled
-                  ? `Shipping: ${shipping ? formatPrice(shipping) : 'Free'}. Pay securely by UPI, card or netbanking.`
-                  : "We'll confirm availability and delivery on WhatsApp."}
+                Shipping: {shipping ? formatPrice(shipping) : 'Free'}. Pay securely by UPI, card or netbanking.
               </p>
-              {supabaseEnabled ? (
-                <>
-                  <Link to="/checkout" onClick={closeCart} className="w-full btn-gold">
-                    Checkout
-                  </Link>
-                  <button onClick={orderOnWhatsApp} className="w-full mt-3 text-sm text-shreem-gray hover:text-shreem-black transition-colors">
-                    or order on WhatsApp
-                  </button>
-                </>
-              ) : (
-                <button onClick={orderOnWhatsApp} className="w-full btn-gold">
-                  Order on WhatsApp
-                </button>
-              )}
+              <Link to="/checkout" onClick={closeCart} className="w-full btn-gold">
+                Checkout
+              </Link>
             </div>
           </>
         )}

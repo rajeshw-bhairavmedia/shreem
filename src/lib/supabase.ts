@@ -22,8 +22,10 @@ export interface ProductRow {
   sizes: string[]
   colors: string[]
   stock: Record<string, number>
+  hsn: string | null
   is_new: boolean
   is_bestseller: boolean
+  is_trending: boolean
   is_active: boolean
   sort_order: number
   created_at: string
@@ -44,6 +46,7 @@ export function toProduct(row: ProductRow): Product {
     colors: row.colors,
     isNew: row.is_new,
     isBestseller: row.is_bestseller,
+    isTrending: row.is_trending,
     isSale: onSale,
     available: row.sizes.length === 0 || row.sizes.some((s) => (row.stock[s] ?? 1) > 0),
     stock: row.stock,

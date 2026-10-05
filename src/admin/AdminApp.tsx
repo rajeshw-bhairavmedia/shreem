@@ -1,8 +1,12 @@
 import type { Session } from '@supabase/supabase-js'
-import { LogOut, Package, ShoppingCart, Store } from 'lucide-react'
+import { LayoutDashboard, LogOut, Package, ShoppingCart, Store, TicketPercent, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 import { supabase, supabaseEnabled } from '../lib/supabase'
+import CustomersPage from './CustomersPage'
+import DashboardPage from './DashboardPage'
+import DiscountsPage from './DiscountsPage'
+import InvoicePage from './InvoicePage'
 import LoginPage from './LoginPage'
 import OrderDetailPage from './OrderDetailPage'
 import OrdersPage from './OrdersPage'
@@ -68,13 +72,16 @@ export default function AdminApp() {
   return (
     <Routes>
       <Route element={<AdminLayout email={email} />}>
-        <Route index element={<Navigate to="orders" replace />} />
+        <Route index element={<DashboardPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="orders/:id" element={<OrderDetailPage />} />
+        <Route path="orders/:id/invoice" element={<InvoicePage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="discounts" element={<DiscountsPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/new" element={<ProductFormPage />} />
         <Route path="products/:id" element={<ProductFormPage />} />
-        <Route path="*" element={<Navigate to="orders" replace />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>
   )
@@ -87,18 +94,27 @@ function AdminLayout({ email }: { email: string }) {
     }`
 
   return (
-    <div className="min-h-screen bg-shreem-cream">
-      <header className="bg-white border-b border-shreem-black/10 sticky top-0 z-30">
+    <div className="min-h-screen bg-shreem-cream print:bg-white">
+      <header className="bg-white border-b border-shreem-black/10 sticky top-0 z-30 print:hidden">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
           <span className="font-display font-black text-lg tracking-tight mr-2">
             SHREEM <span className="text-shreem-gold font-semibold text-sm">Admin</span>
           </span>
-          <nav className="flex gap-1">
+          <nav className="flex gap-1 overflow-x-auto">
+            <NavLink to="/admin" end className={link}>
+              <LayoutDashboard className="w-4 h-4" /> <span className="hidden md:inline">Dashboard</span>
+            </NavLink>
             <NavLink to="/admin/orders" className={link}>
-              <ShoppingCart className="w-4 h-4" /> Orders
+              <ShoppingCart className="w-4 h-4" /> <span className="hidden md:inline">Orders</span>
             </NavLink>
             <NavLink to="/admin/products" className={link}>
-              <Package className="w-4 h-4" /> Products
+              <Package className="w-4 h-4" /> <span className="hidden md:inline">Products</span>
+            </NavLink>
+            <NavLink to="/admin/customers" className={link}>
+              <Users className="w-4 h-4" /> <span className="hidden md:inline">Customers</span>
+            </NavLink>
+            <NavLink to="/admin/discounts" className={link}>
+              <TicketPercent className="w-4 h-4" /> <span className="hidden md:inline">Discounts</span>
             </NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-2">
@@ -112,7 +128,7 @@ function AdminLayout({ email }: { email: string }) {
           </div>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
         <Outlet />
       </main>
     </div>

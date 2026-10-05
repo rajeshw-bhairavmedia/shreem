@@ -1,6 +1,6 @@
 import { Lock } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { INDIAN_STATES, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
@@ -35,16 +35,46 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 export default function CheckoutPage() {
-  const { lines, subtotal, clear, orderOnWhatsApp } = useCart()
+  const { lines, subtotal, clear } = useCart()
   const [details, setDetails] = useState<Details>(loadDetails)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [couponInput, setCouponInput] = useState('')
+  const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [applying, setApplying] = useState(false)
   const navigate = useNavigate()
 
-  if (!supabaseEnabled) return <Navigate to="/collections" replace />
+  if (!supabaseEnabled) {
+    return (
+      <div className="min-h-[60vh] pt-32 pb-20 px-4 text-center">
+        <h1 className="section-heading mb-4">Checkout</h1>
+        <p className="section-subheading mb-8">Online payments are being set up. Please check back soon.</p>
+        <Link to="/collections" className="btn-primary">
+          Continue Shopping
+        </Link>
+      </div>
+    )
+  }
 
-  const shipping = shippingFor(subtotal)
-  const total = subtotal + shipping
+  const items = lines.map((l) => ({ slug: l.productId, size: l.size ?? '', color: l.color ?? '', quantity: l.quantity }))
+  const discount = coupon?.discount ?? 0
+  const shipping = shippingFor(subtotal - discount)
+  const total = subtotal - discount + shipping
+
+  const applyCoupon = async () => {
+    if (!couponInput.trim()) return
+    setApplying(true)
+    setCouponError(null)
+    try {
+      setCoupon(await postJson<{ code: string; discount: number }>('/api/apply-coupon', { code: couponInput, items }))
+    } catch (err) {
+      setCoupon(null)
+      setCouponError(err instanceof Error ? err.message : 'Could not apply this coupon.')
+    } finally {
+      setApplying(false)
+    }
+  }
 
   const field = (key: keyof Details) => ({
     value: details[key],
@@ -68,10 +98,7 @@ export default function CheckoutPage() {
         amount: number
         currency: string
         keyId: string
-      }>('/api/create-order', {
-        items: lines.map((l) => ({ slug: l.productId, size: l.size ?? '', color: l.color ?? '', quantity: l.quantity })),
-        customer: details,
-      })
+      }>('/api/create-order', { items, customer: details, couponCode: coupon?.code })
 
       const onPaid = async (response: RazorpayResponse) => {
         try {
@@ -221,11 +248,50 @@ export default function CheckoutPage() {
                 </li>
               ))}
             </ul>
+            {!coupon && (
+              <div className="border-t border-shreem-black/10 pt-4 mb-4">
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        applyCoupon()
+                      }
+                    }}
+                    placeholder="Coupon code"
+                    aria-label="Coupon code"
+                    className={`${inputClass} h-10 uppercase`}
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={applying || !couponInput.trim()}
+                    className="px-4 h-10 rounded-lg bg-shreem-black text-white text-sm font-medium disabled:opacity-40"
+                  >
+                    {applying ? '…' : 'Apply'}
+                  </button>
+                </div>
+                {couponError && <p className="text-xs text-red-600 mt-2">{couponError}</p>}
+              </div>
+            )}
             <div className="space-y-2 text-sm border-t border-shreem-black/10 pt-4">
               <div className="flex justify-between">
                 <span className="text-shreem-gray">Subtotal</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
+              {coupon && (
+                <div className="flex justify-between text-green-700">
+                  <span>
+                    Discount ({coupon.code}){' '}
+                    <button type="button" onClick={() => setCoupon(null)} className="text-xs underline text-shreem-gray ml-1">
+                      remove
+                    </button>
+                  </span>
+                  <span>−{formatPrice(coupon.discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-shreem-gray">Shipping</span>
                 <span>{shipping ? formatPrice(shipping) : 'Free'}</span>
@@ -245,9 +311,6 @@ export default function CheckoutPage() {
             <p className="text-xs text-shreem-gray text-center mt-3">
               Secure payment by Razorpay · UPI, cards, netbanking, wallets
             </p>
-            <button type="button" onClick={orderOnWhatsApp} className="w-full mt-4 text-sm text-shreem-gray hover:text-shreem-black transition-colors">
-              Prefer to order on WhatsApp?
-            </button>
           </div>
         </aside>
       </form>

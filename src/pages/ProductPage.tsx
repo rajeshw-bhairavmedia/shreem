@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { ArrowLeft, Check, MessageCircle, RefreshCcw, Share2, Shield, ShoppingBag, Truck } from 'lucide-react'
+import { ArrowLeft, Check, RefreshCcw, Share2, Shield, ShoppingBag, Truck, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
@@ -7,7 +7,7 @@ import { MAX_QUANTITY_PER_ITEM } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
-import { categoryLabel, formatPrice, openWhatsApp, orderMessage } from '../lib/utils'
+import { categoryLabel, formatPrice, openWhatsApp } from '../lib/utils'
 
 export default function ProductPage() {
   const { id = '' } = useParams()
@@ -246,12 +246,15 @@ export default function ProductPage() {
               </button>
             </div>
             <button
-              onClick={() => openWhatsApp(orderMessage([{ ...line, key: '' }]))}
+              onClick={() => {
+                addLine(line)
+                navigate('/checkout')
+              }}
               disabled={!available}
               className="w-full btn-gold gap-2 mb-8 disabled:opacity-50 disabled:pointer-events-none"
             >
-              <MessageCircle className="w-5 h-5" />
-              Order on WhatsApp
+              <Zap className="w-5 h-5" />
+              Buy Now
             </button>
 
             <div className="grid grid-cols-3 gap-4 py-6 border-t border-shreem-black/10">

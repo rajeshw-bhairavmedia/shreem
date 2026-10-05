@@ -15,6 +15,7 @@ export const localProducts: Product[] = [
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
     colors: ['Ivory', 'Peach', 'Mint'],
     isBestseller: true,
+    isTrending: true,
     available: true,
   },
   {
@@ -44,6 +45,7 @@ export const localProducts: Product[] = [
     sizes: ['S', 'M', 'L', 'XL', 'XXL', '3XL'],
     colors: ['Maroon', 'Navy', 'Black'],
     isBestseller: true,
+    isTrending: true,
     available: true,
   },
   {
@@ -88,6 +90,7 @@ export const localProducts: Product[] = [
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
     colors: ['Sage', 'Peach', 'Lavender'],
     isBestseller: true,
+    isTrending: true,
     available: true,
   },
   {

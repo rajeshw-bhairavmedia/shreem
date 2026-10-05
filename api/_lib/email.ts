@@ -17,6 +17,7 @@ function orderSummaryHtml(o: Order) {
   const a = o.address
   return `
     <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">${rows}
+      ${o.discount ? `<tr><td style="padding-top:12px">Discount (${escape(o.coupon_code ?? '')})</td><td style="text-align:right;padding-top:12px">−${rupees(o.discount)}</td></tr>` : ''}
       <tr><td style="padding-top:12px">Shipping</td><td style="text-align:right;padding-top:12px">${o.shipping ? rupees(o.shipping) : 'Free'}</td></tr>
       <tr><td><b>Total paid</b></td><td style="text-align:right"><b>${rupees(o.total)}</b></td></tr>
     </table>

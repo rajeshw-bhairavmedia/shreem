@@ -22,14 +22,31 @@ The Shreem Lifestyle online store: the storefront, a Razorpay checkout, and a pr
 
 Go to `yourdomain.com/admin` and sign in.
 
-- **Orders:** tabs for To ship, Shipped, Delivered, Cancelled and Awaiting payment (checkouts the customer
-  never paid for). Each order shows the items, the delivery address, a WhatsApp link to the customer, a tracking
-  field and private notes. Cancelling an order does **not** refund it. Refund from the Razorpay dashboard.
-- **Products:** add or edit products and upload photos (the first photo is the main one). Set price, original
-  price (for a sale badge), category (Men / Women / Occasion Wear), style (Casual / Formal / Traditional),
-  colours, and **stock per size**. Untick "Visible in store" to hide a product without deleting it.
+- **Dashboard:** sales for today, 7 and 30 days, orders, average order value, a daily sales chart,
+  top sellers, low-stock sizes and recent orders.
+- **Orders:** tabs for To ship, Shipped, Delivered, Cancelled and Awaiting payment (checkouts the customer never paid
+  for). You can search by order number, name, email or phone, and **Export CSV** (opens in Excel) for your accounts.
+  Each order shows the items, address, a WhatsApp link to the customer, a tracking field, private notes and a
+  printable **GST invoice**. **Cancel order** puts the items back into stock; refund the money from the Razorpay
+  dashboard.
+- **Products:** add or edit products and photos, price, sale price, category, style, colours, HSN code and
+  **stock per size**. On the product list, click **Trending** (shown in "Trending Now" on the home page),
+  **Bestseller** (badge and Bestsellers filter) or **New** to switch them on or off instantly.
+  "Hidden" removes a product from the store without deleting it.
+- **Customers:** everyone who has paid, with number of orders, total spent and last order.
+- **Discounts:** coupon codes, either % or ₹ off, with an optional minimum order, usage limit and start/end
+  dates. Customers enter them at checkout; the server checks every code, so they can't be faked.
 
-Stock goes down automatically when an order is paid. It does not go back up when you cancel. Adjust it by hand.
+Stock goes down when an order is paid and goes back up if you cancel it.
+
+### GST invoices
+
+Each paid order gets an invoice number (INV-00001, INV-00002, … with no gaps, as GST requires). The invoice
+splits each price into taxable value + GST, as **CGST + SGST** for customers in your state or **IGST** for other
+states. Open an order and click **GST Invoice**, then **Print / Save as PDF**.
+Before issuing invoices, fill in your GSTIN and registered address in `src/config/site.ts`, add HSN codes to your
+products, and **have your CA confirm the GST rates** in `shared/store.ts` (currently 5% up to ₹2,500 per piece,
+18% above).
 
 ---
 
@@ -40,7 +57,7 @@ You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in thi
 ### 1. Supabase (database)
 
 1. Create a project at <https://supabase.com> (choose the Mumbai region).
-2. **Create the tables:** open **SQL Editor**, paste all of `supabase/migrations/20261005000000_store.sql`, and run it.
+2. **Create the tables:** open **SQL Editor** and run each file in `supabase/migrations/` **in order** (oldest date first).
 3. **Optional starter products:** run `supabase/seed.sql` the same way to add the 7 original products.
    Their photos come from this website's `public/` folder.
 4. **Turn off public sign-ups:** **Authentication → Sign In / Providers**, turn off "Allow new users to sign up".
@@ -86,8 +103,9 @@ You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in thi
 
 - `src/config/site.ts`: WhatsApp number, phone, email, address, social links. **Every value marked TODO is a
   placeholder.**
-- `shared/store.ts`: the shipping fee and free-shipping threshold. These apply to both the website and the
-  amount actually charged.
+- `src/config/site.ts` → `business`: legal name, **GSTIN** and registered address for invoices.
+- `shared/store.ts`: the shipping fee, free-shipping threshold and GST rates. These apply to both the website and
+  the amount actually charged.
 - `src/pages/AboutPage.tsx` and `src/pages/ContactPage.tsx`: placeholder stats, timeline and FAQ (marked TODO).
 
 ### Optional extras
@@ -132,13 +150,13 @@ Without Supabase keys the site still runs: it shows the 7 built-in products and 
 ## Project layout
 
 ```
-api/                     Vercel functions: create-order, verify-payment, razorpay-webhook
+api/                     Vercel functions: create-order, apply-coupon, verify-payment, razorpay-webhook
 shared/store.ts          shipping rules, order types (used by site + api)
 supabase/migrations/     database tables, security rules, stock function
 supabase/seed.sql        starter products
 src/config/site.ts       business details (edit this)
-src/admin/               /admin panel (orders, products)
-src/pages/               store pages incl. checkout and order confirmation
+src/admin/               /admin panel (dashboard, orders, invoices, products, customers, discounts)
+src/pages/               store pages incl. lookbook, checkout and order confirmation
 src/components/          navbar, footer, cart drawer, search, product card
 src/context/             catalog and cart state
 public/                  images, favicon, logo

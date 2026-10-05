@@ -19,7 +19,7 @@ export default function WhatsAppButton() {
           </button>
         </div>
         <p className="text-xs text-shreem-gray mb-4">
-          Get instant replies on WhatsApp for product inquiries, sizing help, and orders.
+          Get instant replies on WhatsApp for product questions and sizing help.
         </p>
         <button
           onClick={() => openWhatsApp('Hi! I am interested in your collection. Can you share more details?')}

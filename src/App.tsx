@@ -13,6 +13,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import CollectionsPage from './pages/CollectionsPage'
 import ContactPage from './pages/ContactPage'
 import HomePage from './pages/HomePage'
+import LookbookPage from './pages/LookbookPage'
 import NotFoundPage from './pages/NotFoundPage'
 import OrderConfirmedPage from './pages/OrderConfirmedPage'
 import ProductPage from './pages/ProductPage'
@@ -37,6 +38,7 @@ function Store() {
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/order-confirmed" element={<OrderConfirmedPage />} />
+              <Route path="/lookbook" element={<LookbookPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="*" element={<NotFoundPage />} />

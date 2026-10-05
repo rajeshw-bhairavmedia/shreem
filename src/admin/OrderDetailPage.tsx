@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageCircle } from 'lucide-react'
+import { ArrowLeft, FileText, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Order, OrderStatus } from '../../shared/store'
@@ -39,8 +39,19 @@ export default function OrderDetailPage() {
     setMessage(done)
   }
 
+  const cancel = async () => {
+    if (!confirm('Cancel this order? Its items go back into stock. Refund the payment from your Razorpay dashboard.')) return
+    setBusy(true)
+    setMessage(null)
+    const { data, error } = await supabase.rpc('cancel_order', { p_order_id: id })
+    setBusy(false)
+    if (error) return setMessage(error.message)
+    setOrder(data as Order)
+    setMessage('Order cancelled and stock restored. Remember to refund it in Razorpay.')
+  }
+
   const setStatus = (status: OrderStatus) => {
-    if (status === 'cancelled' && !confirm('Cancel this order? Remember to refund the payment from your Razorpay dashboard.')) return
+    if (status === 'cancelled') return cancel()
     const changes: Partial<Order> = { status }
     if (status === 'shipped') {
       changes.shipped_at = new Date().toISOString()
@@ -63,6 +74,11 @@ export default function OrderDetailPage() {
         <h1 className="text-2xl font-display font-black tracking-tight">{order.order_number}</h1>
         <StatusBadge status={order.status} />
         <span className="text-sm text-shreem-gray">Placed {formatDate(order.created_at)}</span>
+        {order.invoice_number && (
+          <Link to={`/admin/orders/${order.id}/invoice`} className="ml-auto inline-flex items-center gap-2 px-4 h-9 rounded-full bg-white text-sm font-medium hover:bg-shreem-black/5">
+            <FileText className="w-4 h-4" /> GST Invoice {order.invoice_number}
+          </Link>
+        )}
       </div>
 
       {message && <p className="mb-4 text-sm px-4 py-2 rounded-lg bg-white">{message}</p>}
@@ -87,6 +103,9 @@ export default function OrderDetailPage() {
             </ul>
             <div className="border-t border-shreem-black/10 mt-2 pt-4 space-y-1 text-sm">
               <div className="flex justify-between"><span className="text-shreem-gray">Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-green-700"><span>Discount ({order.coupon_code})</span><span>−{formatPrice(order.discount)}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-shreem-gray">Shipping</span><span>{order.shipping ? formatPrice(order.shipping) : 'Free'}</span></div>
               <div className="flex justify-between font-semibold text-base"><span>Total</span><span>{formatPrice(order.total)}</span></div>
             </div>

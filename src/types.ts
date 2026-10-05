@@ -15,6 +15,8 @@ export interface Product {
   colors: string[]
   isNew?: boolean
   isBestseller?: boolean
+  /** Shown in "Trending Now" on the home page (chosen in /admin). */
+  isTrending?: boolean
   isSale?: boolean
   available: boolean
   /** Units in stock per size. Missing when stock isn't tracked (local catalog). */

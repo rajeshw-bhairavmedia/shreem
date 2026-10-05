@@ -1,5 +1,5 @@
 import { site } from '../config/site'
-import type { CartLine, Product } from '../types'
+import type { Product } from '../types'
 
 export const formatPrice = (amount: number) => `₹${amount.toLocaleString('en-IN')}`
 
@@ -21,17 +21,6 @@ export function matchesQuery(p: Product, query: string) {
 export function openWhatsApp(text: string) {
   const url = `https://wa.me/${site.whatsappNumber}?text=${encodeURIComponent(text)}`
   window.open(url, '_blank', 'noopener,noreferrer')
-}
-
-export function orderMessage(lines: CartLine[]) {
-  const items = lines.map((l, i) => {
-    const options = [l.size && `Size: ${l.size}`, l.color && `Color: ${l.color}`]
-      .filter(Boolean)
-      .join(', ')
-    return `${i + 1}. ${l.name}${options ? ` (${options})` : ''} x ${l.quantity} = ${formatPrice(l.price * l.quantity)}`
-  })
-  const total = lines.reduce((sum, l) => sum + l.price * l.quantity, 0)
-  return `Hi! I'd like to place an order:\n\n${items.join('\n')}\n\nTotal: ${formatPrice(total)}\n\nPlease confirm availability.`
 }
 
 const formspreeId = import.meta.env.VITE_FORMSPREE_ID

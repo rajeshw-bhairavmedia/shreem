@@ -23,8 +23,10 @@ interface FormState {
   images: string[]
   sizes: { size: string; qty: string }[]
   colors: string
+  hsn: string
   is_new: boolean
   is_bestseller: boolean
+  is_trending: boolean
   is_active: boolean
   sort_order: string
 }
@@ -40,8 +42,10 @@ const blank: FormState = {
   images: [],
   sizes: [],
   colors: '',
+  hsn: '',
   is_new: true,
   is_bestseller: false,
+  is_trending: false,
   is_active: true,
   sort_order: '0',
 }
@@ -65,8 +69,10 @@ function fromRow(p: ProductRow): FormState {
     images: p.images,
     sizes: p.sizes.map((size) => ({ size, qty: p.stock[size] === undefined ? '' : String(p.stock[size]) })),
     colors: p.colors.join(', '),
+    hsn: p.hsn ?? '',
     is_new: p.is_new,
     is_bestseller: p.is_bestseller,
+    is_trending: p.is_trending,
     is_active: p.is_active,
     sort_order: String(p.sort_order),
   }
@@ -165,8 +171,10 @@ export default function ProductFormPage() {
         sizes.filter((s) => s.qty !== '').map((s) => [s.size.trim(), Math.max(0, Math.floor(Number(s.qty)) || 0)]),
       ),
       colors: form.colors.split(',').map((c) => c.trim()).filter(Boolean),
+      hsn: form.hsn.trim() || null,
       is_new: form.is_new,
       is_bestseller: form.is_bestseller,
+      is_trending: form.is_trending,
       is_active: form.is_active,
       sort_order: Number(form.sort_order) || 0,
     }
@@ -358,6 +366,11 @@ export default function ProductFormPage() {
               <input id="colors" value={form.colors} onChange={(e) => set('colors', e.target.value)} placeholder="Ivory, Peach, Mint" className={`${input} mt-1`} />
               <p className="text-xs text-shreem-gray mt-1">Separate with commas.</p>
             </div>
+            <div>
+              <label htmlFor="hsn" className="text-sm font-medium">HSN code</label>
+              <input id="hsn" value={form.hsn} onChange={(e) => set('hsn', e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="e.g. 6204" inputMode="numeric" className={`${input} mt-1`} />
+              <p className="text-xs text-shreem-gray mt-1">Printed on GST invoices. Ask your CA for the right code.</p>
+            </div>
           </section>
 
           <section className={`${card} p-6 space-y-3 text-sm`}>
@@ -365,7 +378,8 @@ export default function ProductFormPage() {
               [
                 ['is_active', 'Visible in store'],
                 ['is_new', 'New arrival'],
-                ['is_bestseller', 'Bestseller'],
+                ['is_bestseller', 'Bestseller (badge + Bestsellers filter)'],
+                ['is_trending', 'Trending Now (home page)'],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="flex items-center gap-3 cursor-pointer">
