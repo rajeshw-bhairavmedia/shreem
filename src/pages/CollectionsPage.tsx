@@ -227,7 +227,7 @@ export default function CollectionsPage() {
       {/* Mobile filter sheet */}
       <div
         className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
-          filtersOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          filtersOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
         }`}
       >
         <div className="absolute inset-0 bg-shreem-black/20 backdrop-blur-sm" onClick={() => setFiltersOpen(false)} />

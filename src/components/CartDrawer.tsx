@@ -27,7 +27,7 @@ export default function CartDrawer() {
   return (
     <div
       className={`fixed inset-0 z-[60] transition-all duration-300 ${
-        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
       }`}
       aria-hidden={!isOpen}
     >

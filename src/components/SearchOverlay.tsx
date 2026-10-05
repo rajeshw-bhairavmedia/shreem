@@ -37,7 +37,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   return (
     <div
       className={`fixed inset-0 z-[60] transition-all duration-300 ${
-        open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        open ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
       }`}
       aria-hidden={!open}
     >

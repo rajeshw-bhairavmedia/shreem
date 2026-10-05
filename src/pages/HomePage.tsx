@@ -10,6 +10,8 @@ import { categories } from '../data/categories'
 import { formsEnabled, submitForm } from '../lib/utils'
 
 gsap.registerPlugin(ScrollTrigger)
+// Don't recalculate scroll animations when a phone's address bar shows/hides (causes jumps).
+ScrollTrigger.config({ ignoreMobileResize: true })
 
 const looks = [
   { headline: 'VERSATILE STYLE', body: 'From morning meetings to evening plans—clean lines that work anywhere.', link: 'See styling notes', image: '/look_versatile.jpg', align: 'right' },
@@ -103,7 +105,8 @@ export default function HomePage() {
             className="relative min-h-screen w-full overflow-hidden flex items-center"
           >
             <div className="value-bg absolute inset-0">
-              <img src={look.image} alt={look.headline} loading="lazy" className="w-full h-full object-cover" />
+              {/* Not lazy: these move with the scroll, so decode them before they arrive on screen. */}
+              <img src={look.image} alt={look.headline} decoding="async" className="w-full h-full object-cover" />
               <div
                 className={`absolute inset-0 ${
                   look.align === 'right' ? 'bg-gradient-to-l' : 'bg-gradient-to-r'
