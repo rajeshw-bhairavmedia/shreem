@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
-import { LayoutDashboard, LogOut, MessageSquareText, Package, ShoppingBasket, ShoppingCart, Store, TicketPercent, Users } from 'lucide-react'
+import { LayoutDashboard, LogOut, Menu, MessageSquareText, Package, ShoppingBasket, ShoppingCart, Store, TicketPercent, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { supabase, supabaseEnabled } from '../lib/supabase'
 import AbandonedCartsPage from './AbandonedCartsPage'
 import CustomersPage from './CustomersPage'
@@ -91,55 +91,149 @@ export default function AdminApp() {
   )
 }
 
-function AdminLayout({ email }: { email: string }) {
+const navGroups = [
+  {
+    title: 'Store',
+    items: [
+      { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+      { to: '/admin/orders', label: 'Orders', icon: ShoppingCart, badge: 'toShip' as const },
+      { to: '/admin/products', label: 'Products', icon: Package },
+      { to: '/admin/customers', label: 'Customers', icon: Users },
+    ],
+  },
+  {
+    title: 'Marketing',
+    items: [
+      { to: '/admin/discounts', label: 'Discounts', icon: TicketPercent },
+      { to: '/admin/carts', label: 'Abandoned carts', icon: ShoppingBasket },
+      { to: '/admin/reviews', label: 'Reviews', icon: MessageSquareText, badge: 'pendingReviews' as const },
+    ],
+  },
+]
+
+type Badges = { toShip: number; pendingReviews: number }
+
+/** Counts shown next to Orders (to ship) and Reviews (waiting for approval). */
+function useBadges(pathname: string): Badges {
+  const [badges, setBadges] = useState<Badges>({ toShip: 0, pendingReviews: 0 })
+  useEffect(() => {
+    Promise.all([
+      supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'paid'),
+      supabase.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]).then(([orders, reviews]) => setBadges({ toShip: orders.count ?? 0, pendingReviews: reviews.count ?? 0 }))
+  }, [pathname])
+  return badges
+}
+
+function Sidebar({ email, badges, onNavigate }: { email: string; badges: Badges; onNavigate?: () => void }) {
   const link = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-      isActive ? 'bg-shreem-black text-white' : 'text-shreem-black hover:bg-shreem-black/5'
+    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      isActive ? 'bg-shreem-black text-white' : 'text-shreem-black/80 hover:bg-shreem-black/5 hover:text-shreem-black'
     }`
 
   return (
-    <div className="min-h-screen bg-shreem-cream print:bg-white">
-      <header className="bg-white border-b border-shreem-black/10 sticky top-0 z-30 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-          <span className="font-display font-black text-lg tracking-tight mr-2 whitespace-nowrap">
-            SHREEM <span className="text-shreem-gold font-semibold text-sm">Admin</span>
-          </span>
-          <nav className="flex gap-1 overflow-x-auto">
-            <NavLink to="/admin" end className={link} title="Dashboard">
-              <LayoutDashboard className="w-4 h-4" /> <span className="hidden xl:inline">Dashboard</span>
-            </NavLink>
-            <NavLink to="/admin/orders" className={link} title="Orders">
-              <ShoppingCart className="w-4 h-4" /> <span className="hidden xl:inline">Orders</span>
-            </NavLink>
-            <NavLink to="/admin/products" className={link} title="Products">
-              <Package className="w-4 h-4" /> <span className="hidden xl:inline">Products</span>
-            </NavLink>
-            <NavLink to="/admin/customers" className={link} title="Customers">
-              <Users className="w-4 h-4" /> <span className="hidden xl:inline">Customers</span>
-            </NavLink>
-            <NavLink to="/admin/discounts" className={link} title="Discounts">
-              <TicketPercent className="w-4 h-4" /> <span className="hidden xl:inline">Discounts</span>
-            </NavLink>
-            <NavLink to="/admin/carts" className={link} title="Carts">
-              <ShoppingBasket className="w-4 h-4" /> <span className="hidden xl:inline">Carts</span>
-            </NavLink>
-            <NavLink to="/admin/reviews" className={link} title="Reviews">
-              <MessageSquareText className="w-4 h-4" /> <span className="hidden xl:inline">Reviews</span>
-            </NavLink>
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1 text-sm text-shreem-gray hover:text-shreem-black px-2">
-              <Store className="w-4 h-4" /> <span className="hidden xl:inline whitespace-nowrap">View store</span>
-            </a>
-            <span className="hidden 2xl:inline text-xs text-shreem-gray">{email}</span>
-            <button onClick={() => supabase.auth.signOut()} className="p-2 rounded-lg hover:bg-shreem-black/5" aria-label="Sign out" title="Sign out">
-              <LogOut className="w-4 h-4" />
-            </button>
+    <div className="flex flex-col h-full">
+      <div className="px-5 h-16 flex items-center border-b border-shreem-black/10">
+        <span className="font-display font-black text-lg tracking-tight whitespace-nowrap">
+          SHREEM <span className="text-shreem-gold font-semibold text-sm">Admin</span>
+        </span>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Admin">
+        {navGroups.map((group) => (
+          <div key={group.title}>
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-shreem-gray">{group.title}</p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const count = 'badge' in item && item.badge ? badges[item.badge] : 0
+                return (
+                  <NavLink key={item.to} to={item.to} end={'end' in item} className={link} onClick={onNavigate}>
+                    <item.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{item.label}</span>
+                    {count > 0 && (
+                      <span className="min-w-5 h-5 px-1.5 rounded-full bg-shreem-gold text-shreem-black text-[11px] font-semibold flex items-center justify-center">
+                        {count}
+                      </span>
+                    )}
+                  </NavLink>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        ))}
+      </nav>
+
+      <div className="border-t border-shreem-black/10 px-3 py-4 space-y-1">
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-shreem-black/80 hover:bg-shreem-black/5"
+        >
+          <Store className="w-4 h-4" /> View store
+        </a>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-shreem-black/80 hover:bg-shreem-black/5"
+        >
+          <LogOut className="w-4 h-4" /> Sign out
+        </button>
+        <p className="px-3 pt-2 text-xs text-shreem-gray truncate" title={email}>
+          {email}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function AdminLayout({ email }: { email: string }) {
+  const { pathname } = useLocation()
+  const badges = useBadges(pathname)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => setMenuOpen(false), [pathname])
+
+  return (
+    <div className="min-h-screen bg-shreem-cream print:bg-white lg:flex">
+      {/* Sidebar: fixed on large screens */}
+      <aside className="hidden lg:block w-60 flex-shrink-0 bg-white border-r border-shreem-black/10 h-screen sticky top-0 print:hidden">
+        <Sidebar email={email} badges={badges} />
+      </aside>
+
+      {/* Small screens: top bar + slide-in sidebar */}
+      <header className="lg:hidden sticky top-0 z-30 bg-white border-b border-shreem-black/10 h-14 flex items-center gap-3 px-4 print:hidden">
+        <button onClick={() => setMenuOpen(true)} className="p-2 -ml-2 rounded-lg hover:bg-shreem-black/5" aria-label="Open menu">
+          <Menu className="w-5 h-5" />
+        </button>
+        <span className="font-display font-black tracking-tight">
+          SHREEM <span className="text-shreem-gold font-semibold text-sm">Admin</span>
+        </span>
+        {badges.toShip > 0 && (
+          <span className="ml-auto text-xs font-medium bg-shreem-gold/20 rounded-full px-2.5 py-1">{badges.toShip} to ship</span>
+        )}
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
-        <Outlet />
+      <div
+        className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 print:hidden ${
+          menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+        }`}
+      >
+        <div className="absolute inset-0 bg-shreem-black/30" onClick={() => setMenuOpen(false)} />
+        <aside
+          className={`absolute top-0 left-0 h-full w-64 bg-white shadow-2xl transition-transform duration-300 ${
+            menuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <button onClick={() => setMenuOpen(false)} className="absolute top-4 right-3 p-2 rounded-lg hover:bg-shreem-black/5" aria-label="Close menu">
+            <X className="w-4 h-4" />
+          </button>
+          <Sidebar email={email} badges={badges} onNavigate={() => setMenuOpen(false)} />
+        </aside>
+      </div>
+
+      <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-8 print:p-0">
+        <div className="max-w-6xl mx-auto print:max-w-none">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
