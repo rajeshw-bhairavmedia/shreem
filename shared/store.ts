@@ -85,6 +85,7 @@ export interface Order {
   coupon_code: string | null
   shipping: number
   total: number
+  refunded_amount: number
   invoice_number: string | null
   razorpay_order_id: string | null
   razorpay_payment_id: string | null
@@ -94,3 +95,53 @@ export interface Order {
   paid_at: string | null
   shipped_at: string | null
 }
+
+export interface Refund {
+  id: string
+  order_id: string
+  razorpay_refund_id: string | null
+  amount: number
+  status: 'pending' | 'processed' | 'failed'
+  reason: string | null
+  created_at: string
+}
+
+/** Cart line as saved for reminder emails and restored from the email link. */
+export interface SavedCartItem {
+  slug: string
+  name: string
+  image: string
+  size: string
+  color: string
+  price: number
+  quantity: number
+}
+
+export interface AbandonedCart {
+  id: string
+  email: string
+  name: string | null
+  items: SavedCartItem[]
+  subtotal: number
+  created_at: string
+  updated_at: string
+  reminder_sent_at: string | null
+  recovered_at: string | null
+}
+
+export interface Review {
+  id: string
+  product_id: string
+  order_id: string | null
+  name: string
+  rating: number
+  title: string | null
+  body: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
+/** Carts idle this long (and not paid) get their one reminder email. */
+export const CART_REMINDER_AFTER_HOURS = 3
+/** Carts older than this are left alone. */
+export const CART_REMINDER_MAX_DAYS = 7

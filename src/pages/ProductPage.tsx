@@ -3,6 +3,7 @@ import { ArrowLeft, Check, RefreshCcw, Share2, Shield, ShoppingBag, Truck, Zap }
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
+import ProductReviews, { Stars, useReviews } from '../components/ProductReviews'
 import { MAX_QUANTITY_PER_ITEM } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
@@ -15,6 +16,7 @@ export default function ProductPage() {
   const { products, loading, getProduct } = useCatalog()
   const { addLine, openCart } = useCart()
   const product = getProduct(id)
+  const reviewData = useReviews(product?.id ?? id)
 
   const [size, setSize] = useState('')
   const [color, setColor] = useState('')
@@ -145,6 +147,12 @@ export default function ProductPage() {
             <div className="mb-6">
               <p className="text-sm text-shreem-gray capitalize mb-2">{categoryLabel(product)}</p>
               <h1 className="text-3xl lg:text-4xl font-display font-bold text-shreem-black mb-4">{product.name}</h1>
+              {reviewData.reviews.length > 0 && (
+                <a href="#reviews" className="inline-flex items-center gap-2 mb-4 text-sm text-shreem-gray hover:text-shreem-black">
+                  <Stars rating={reviewData.average} />
+                  {reviewData.average.toFixed(1)} ({reviewData.reviews.length} review{reviewData.reviews.length === 1 ? '' : 's'})
+                </a>
+              )}
               <div className="flex items-center gap-3">
                 <span className="text-2xl font-semibold text-shreem-black">{formatPrice(price)}</span>
                 {originalPrice && (
@@ -274,6 +282,8 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      <ProductReviews slug={product.id} {...reviewData} />
 
       {related.length > 0 && (
         <div className="mt-20 px-4 sm:px-6 lg:px-10">

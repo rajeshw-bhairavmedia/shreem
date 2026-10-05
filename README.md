@@ -27,8 +27,8 @@ Go to `yourdomain.com/admin` and sign in.
 - **Orders:** tabs for To ship, Shipped, Delivered, Cancelled and Awaiting payment (checkouts the customer never paid
   for). You can search by order number, name, email or phone, and **Export CSV** (opens in Excel) for your accounts.
   Each order shows the items, address, a WhatsApp link to the customer, a tracking field, private notes and a
-  printable **GST invoice**. **Cancel order** puts the items back into stock; refund the money from the Razorpay
-  dashboard.
+  printable **GST invoice**. **Refund** sends money back to the customer through Razorpay (full or part); a full
+  refund can also cancel the order and put the items back in stock. Refunds reach the customer in 5-7 working days.
 - **Products:** add or edit products and photos, price, sale price, category, style, colours, HSN code and
   **stock per size**. On the product list, click **Trending** (shown in "Trending Now" on the home page),
   **Bestseller** (badge and Bestsellers filter) or **New** to switch them on or off instantly.
@@ -36,6 +36,11 @@ Go to `yourdomain.com/admin` and sign in.
 - **Customers:** everyone who has paid, with number of orders, total spent and last order.
 - **Discounts:** coupon codes, either % or ₹ off, with an optional minimum order, usage limit and start/end
   dates. Customers enter them at checkout; the server checks every code, so they can't be faked.
+- **Carts:** shoppers who typed their email at checkout but didn't pay. Each gets **one** reminder email (once a day,
+  for carts idle 3+ hours) with a link that refills their cart. Buyers and anyone who clicked "unsubscribe" are never
+  emailed. The page shows how many carts were won back.
+- **Reviews:** customers review a product with their order number and email, so only real buyers can review. New
+  reviews wait here until you **Approve** them; then they show on the product page with star ratings.
 
 Stock goes down when an order is paid and goes back up if you cancel it.
 
@@ -79,7 +84,7 @@ You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in thi
 4. After deploying (step 3), go to **Webhooks → Add new webhook**:
    - URL: `https://yourdomain.com/api/razorpay-webhook`
    - Secret: make up a long random string and keep it for the env vars
-   - Events: `payment.captured` and `order.paid`
+   - Events: `payment.captured`, `order.paid`, `refund.processed` and `refund.failed`
 
 ### 3. Vercel (hosting)
 
@@ -94,6 +99,8 @@ You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in thi
    | `RAZORPAY_KEY_ID` | `rzp_test_…` (later `rzp_live_…`) |
    | `RAZORPAY_KEY_SECRET` | Razorpay key secret (**secret**) |
    | `RAZORPAY_WEBHOOK_SECRET` | the webhook secret you chose |
+   | `SITE_URL` | your live address, e.g. `https://shreemlifestyle.com` (used in email links) |
+   | `CRON_SECRET` | any long random string (protects the daily cart-reminder job) |
 
 3. Deploy, then connect your domain under **Settings → Domains**.
 4. Place a test order with Razorpay's test UPI ID `success@razorpay` and check it appears in `/admin`.
@@ -110,9 +117,11 @@ You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in thi
 
 ### Optional extras
 
-- **Order emails** ([Resend](https://resend.com)): set `RESEND_API_KEY`, `ORDER_EMAIL_FROM` (an address on a
-  domain verified in Resend) and `ORDER_NOTIFY_EMAIL` (where new-order alerts go). Customers then get a
-  confirmation email and you get an alert for every paid order. Razorpay also emails you about each payment.
+- **Emails** ([Resend](https://resend.com)): set `RESEND_API_KEY`, `ORDER_EMAIL_FROM` (an address on a domain
+  verified in Resend) and `ORDER_NOTIFY_EMAIL` (where new-order alerts go). This turns on order confirmations for
+  customers, new-order alerts for you, and **cart reminder emails**. Without Resend, carts are still saved and listed
+  in /admin but no reminders are sent. The reminder job runs daily at 10:00 IST (`vercel.json`); Vercel's free plan
+  allows one run per day.
 - **Contact form + newsletter by email** ([Formspree](https://formspree.io)): set `VITE_FORMSPREE_ID`. Without
   it, the contact form sends the message through WhatsApp.
 
@@ -150,12 +159,12 @@ Without Supabase keys the site still runs: it shows the 7 built-in products and 
 ## Project layout
 
 ```
-api/                     Vercel functions: create-order, apply-coupon, verify-payment, razorpay-webhook
+api/                     Vercel functions: checkout, payments, webhook, refunds, cart reminders, reviews
 shared/store.ts          shipping rules, order types (used by site + api)
 supabase/migrations/     database tables, security rules, stock function
 supabase/seed.sql        starter products
 src/config/site.ts       business details (edit this)
-src/admin/               /admin panel (dashboard, orders, invoices, products, customers, discounts)
+src/admin/               /admin panel (dashboard, orders, refunds, invoices, products, customers, discounts, carts, reviews)
 src/pages/               store pages incl. lookbook, checkout and order confirmation
 src/components/          navbar, footer, cart drawer, search, product card
 src/context/             catalog and cart state

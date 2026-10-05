@@ -61,7 +61,7 @@ export default function HomePage() {
             ))}
           </h1>
           <p className="hero-subtext text-lg md:text-xl text-shreem-gray max-w-xl mb-8">
-            Premium essentials designed for real life—soft, durable, quietly bold.
+            Premium essentials designed for real life: soft, durable, quietly bold.
           </p>
           <Link to="/collections" className="hero-subtext btn-primary">
             Explore the Collection

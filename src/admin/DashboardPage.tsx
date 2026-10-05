@@ -102,7 +102,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className={`${card} p-5`}>
           <p className="text-xs uppercase tracking-wider text-shreem-gray">Sales · 30 days</p>
-          <p className="text-2xl font-semibold mt-2">{stats ? formatPrice(stats.revenue) : '—'}</p>
+          <p className="text-2xl font-semibold mt-2">{stats ? formatPrice(stats.revenue) : '…'}</p>
           {stats && (
             <p className="text-xs text-shreem-gray mt-1">
               Today {formatPrice(stats.today)} · 7 days {formatPrice(stats.week)}
@@ -111,11 +111,11 @@ export default function DashboardPage() {
         </div>
         <div className={`${card} p-5`}>
           <p className="text-xs uppercase tracking-wider text-shreem-gray">Orders · 30 days</p>
-          <p className="text-2xl font-semibold mt-2">{stats?.count ?? '—'}</p>
+          <p className="text-2xl font-semibold mt-2">{stats?.count ?? '…'}</p>
         </div>
         <div className={`${card} p-5`}>
           <p className="text-xs uppercase tracking-wider text-shreem-gray">Average order</p>
-          <p className="text-2xl font-semibold mt-2">{stats ? formatPrice(stats.aov) : '—'}</p>
+          <p className="text-2xl font-semibold mt-2">{stats ? formatPrice(stats.aov) : '…'}</p>
         </div>
         <Link to="/admin/orders" className={`${card} p-5 hover:ring-2 hover:ring-shreem-gold/40 transition-shadow`}>
           <p className="text-xs uppercase tracking-wider text-shreem-gray">To ship</p>

@@ -1,9 +1,9 @@
 import { Lock } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { INDIAN_STATES, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
-import { useCart } from '../context/CartContext'
+import { getCartId, useCart } from '../context/CartContext'
 import { loadRazorpay, openRazorpay, type RazorpayResponse } from '../lib/razorpay'
 import { supabaseEnabled } from '../lib/supabase'
 import { formatPrice } from '../lib/utils'
@@ -44,6 +44,25 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const navigate = useNavigate()
+
+  // Save the cart once we have an email, so the shopper can get one reminder if they don't pay.
+  useEffect(() => {
+    const email = details.email.trim()
+    if (!supabaseEnabled || !lines.length || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    const t = setTimeout(() => {
+      fetch('/api/cart-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: getCartId(),
+          email,
+          name: details.name,
+          items: lines.map((l) => ({ slug: l.productId, size: l.size ?? '', color: l.color ?? '', quantity: l.quantity })),
+        }),
+      }).catch(() => {})
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [details.email, details.name, lines])
 
   if (!supabaseEnabled) {
     return (
@@ -168,6 +187,9 @@ export default function CheckoutPage() {
               <div>
                 <label htmlFor="email" className="text-sm font-medium">Email</label>
                 <input id="email" type="email" required autoComplete="email" className={`${inputClass} mt-1`} {...field('email')} />
+                <p className="text-[11px] text-shreem-gray mt-1">
+                  If you don't finish your order, we'll email you one reminder about your cart.
+                </p>
               </div>
               <div>
                 <label htmlFor="phone" className="text-sm font-medium">Mobile number</label>

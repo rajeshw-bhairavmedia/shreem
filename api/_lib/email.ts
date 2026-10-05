@@ -1,4 +1,4 @@
-import type { Order } from '../../shared/store.js'
+import type { AbandonedCart, Order } from '../../shared/store.js'
 
 const escape = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -32,16 +32,8 @@ function orderSummaryHtml(o: Order) {
  * must not fail a paid order.
  */
 export async function sendOrderEmails(o: Order) {
-  const key = process.env.RESEND_API_KEY
-  const from = process.env.ORDER_EMAIL_FROM
-  if (!key || !from) return
-
-  const send = (to: string, subject: string, html: string) =>
-    fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject, html }),
-    })
+  if (!emailEnabled()) return
+  const send = sendEmail
 
   const summary = orderSummaryHtml(o)
   const results = await Promise.allSettled([
@@ -55,4 +47,40 @@ export async function sendOrderEmails(o: Order) {
       : Promise.resolve(null),
   ])
   for (const r of results) if (r.status === 'rejected') console.error('Order email failed:', r.reason)
+}
+
+export const emailEnabled = () => Boolean(process.env.RESEND_API_KEY && process.env.ORDER_EMAIL_FROM)
+
+/** Sends one email through Resend. Throws if Resend rejects it. */
+export async function sendEmail(to: string, subject: string, html: string) {
+  const res = await fetch(`${process.env.RESEND_API_BASE || 'https://api.resend.com'}/emails`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: process.env.ORDER_EMAIL_FROM, to, subject, html }),
+  })
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`)
+}
+
+/** The one reminder sent for an unpaid cart. */
+export function cartReminderHtml(cart: AbandonedCart, restoreUrl: string, unsubscribeUrl: string) {
+  const rows = cart.items
+    .map(
+      (i) =>
+        `<tr><td style="padding:8px 0;width:64px">${i.image ? `<img src="${escape(i.image)}" width="56" height="70" style="object-fit:cover;border-radius:4px" alt="">` : ''}</td>` +
+        `<td style="padding:8px">${escape(i.name)}<br><small style="color:#6e6a63">${escape([i.size, i.color].filter(Boolean).join(' / '))} × ${i.quantity}</small></td>` +
+        `<td style="text-align:right">${rupees(i.price * i.quantity)}</td></tr>`,
+    )
+    .join('')
+  return `
+    <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;max-width:520px">
+      <p style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin:0 0 16px">SHREEM</p>
+      <p>Hi ${escape(cart.name || 'there')},</p>
+      <p>You left a few pieces in your cart. We've saved them for you:</p>
+      <table style="width:100%;border-collapse:collapse">${rows}</table>
+      <p style="margin:24px 0">
+        <a href="${escape(restoreUrl)}" style="background:#D4A24A;color:#111;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:bold;text-transform:uppercase;font-size:13px;letter-spacing:1px">Complete your order</a>
+      </p>
+      <p style="color:#6e6a63;font-size:12px">Items are not reserved and may sell out.<br>
+      This is a one-time reminder. <a href="${escape(unsubscribeUrl)}" style="color:#6e6a63">Don't send me cart reminders</a>.</p>
+    </div>`
 }

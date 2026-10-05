@@ -19,14 +19,14 @@ const csvCell = (v: unknown) => {
 function exportCsv(orders: Order[]) {
   const header = [
     'Order', 'Invoice', 'Date', 'Status', 'Customer', 'Email', 'Phone', 'Address', 'City', 'State', 'PIN',
-    'Items', 'Subtotal', 'Discount', 'Coupon', 'Shipping', 'Total', 'Razorpay payment', 'Tracking',
+    'Items', 'Subtotal', 'Discount', 'Coupon', 'Shipping', 'Total', 'Refunded', 'Razorpay payment', 'Tracking',
   ]
   const rows = orders.map((o) => [
     o.order_number, o.invoice_number, new Date(o.created_at).toLocaleString('en-IN'), o.status, o.customer_name,
     o.customer_email, o.customer_phone, [o.address.line1, o.address.line2].filter(Boolean).join(', '), o.address.city,
     o.address.state, o.address.pincode,
     o.items.map((i) => `${i.name} (${[i.size, i.color].filter(Boolean).join('/')}) x${i.quantity}`).join('; '),
-    o.subtotal, o.discount, o.coupon_code, o.shipping, o.total, o.razorpay_payment_id, o.tracking,
+    o.subtotal, o.discount, o.coupon_code, o.shipping, o.total, o.refunded_amount, o.razorpay_payment_id, o.tracking,
   ])
   const csv = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')
   // The BOM (﻿) makes Excel read ₹ and non-English names correctly.

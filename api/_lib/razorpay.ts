@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { env } from './http.js'
+import { HttpError, env } from './http.js'
 
 const apiBase = () => process.env.RAZORPAY_API_BASE || 'https://api.razorpay.com'
 
@@ -17,7 +17,22 @@ export async function createRazorpayOrder(amountPaise: number, receipt: string, 
   return data.id
 }
 
-const hmac = (secret: string, payload: string) => createHmac('sha256', secret).update(payload).digest('hex')
+/** Refunds (part of) a captured payment back to the customer's original payment method. */
+export async function createRazorpayRefund(paymentId: string, amountPaise: number, notes: Record<string, string>) {
+  const auth = Buffer.from(`${env('RAZORPAY_KEY_ID')}:${env('RAZORPAY_KEY_SECRET')}`).toString('base64')
+  const res = await fetch(`${apiBase()}/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: amountPaise, speed: 'normal', notes }),
+  })
+  const data = (await res.json()) as { id?: string; status?: string; error?: { description?: string } }
+  if (!res.ok || !data.id) {
+    throw new HttpError(502, `Razorpay could not refund: ${data.error?.description ?? `error ${res.status}`}`)
+  }
+  return { id: data.id, status: data.status === 'processed' ? 'processed' : 'pending' } as const
+}
+
+const hmac =(secret: string, payload: string) => createHmac('sha256', secret).update(payload).digest('hex')
 
 function safeEqual(a: string, b: string) {
   const ba = Buffer.from(a)

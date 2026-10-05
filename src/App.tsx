@@ -17,6 +17,7 @@ import LookbookPage from './pages/LookbookPage'
 import NotFoundPage from './pages/NotFoundPage'
 import OrderConfirmedPage from './pages/OrderConfirmedPage'
 import ProductPage from './pages/ProductPage'
+import RestoreCartPage from './pages/RestoreCartPage'
 
 // Loaded only when visiting /admin, so shoppers never download it.
 const AdminApp = lazy(() => import('./admin/AdminApp'))
@@ -37,6 +38,7 @@ function Store() {
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/cart/restore" element={<RestoreCartPage />} />
               <Route path="/order-confirmed" element={<OrderConfirmedPage />} />
               <Route path="/lookbook" element={<LookbookPage />} />
               <Route path="/about" element={<AboutPage />} />

@@ -102,7 +102,7 @@ export default function InvoicePage() {
             <div className="font-display font-black text-2xl tracking-tight">SHREEM</div>
             <div className="mt-2 font-medium">{b.legalName}</div>
             <div className="text-shreem-gray max-w-xs">{b.address}</div>
-            <div className="mt-1">GSTIN: <span className="font-medium">{b.gstin || '—'}</span></div>
+            <div className="mt-1">GSTIN: <span className="font-medium">{b.gstin || 'Not set'}</span></div>
           </div>
           <div className="text-right">
             <div className="text-lg font-semibold uppercase tracking-wider">Tax Invoice</div>

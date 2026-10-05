@@ -2,6 +2,30 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { CartLine } from '../types'
 
 const STORAGE_KEY = 'shreem-cart'
+const CART_ID_KEY = 'shreem-cart-id'
+
+/** Identifies this cart for reminder emails; a new one starts after each paid order. */
+export function getCartId(): string {
+  try {
+    let id = localStorage.getItem(CART_ID_KEY)
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem(CART_ID_KEY, id)
+    }
+    return id
+  } catch {
+    return crypto.randomUUID()
+  }
+}
+
+export function setCartId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(CART_ID_KEY, id)
+    else localStorage.removeItem(CART_ID_KEY)
+  } catch {
+    // Storage unavailable.
+  }
+}
 
 interface CartState {
   lines: CartLine[]
@@ -14,6 +38,8 @@ interface CartState {
   setQuantity: (key: string, quantity: number) => void
   removeLine: (key: string) => void
   clear: () => void
+  /** Replaces the cart (used by the reminder email's restore link). */
+  replaceLines: (lines: Omit<CartLine, 'key'>[]) => void
 }
 
 const CartContext = createContext<CartState | null>(null)
@@ -61,14 +87,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
 
   const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key))
-  const clear = useCallback(() => setLines([]), [])
+  const clear = useCallback(() => {
+    setLines([])
+    setCartId(null)
+  }, [])
+  const replaceLines = useCallback(
+    (next: Omit<CartLine, 'key'>[]) =>
+      setLines(next.map((l) => ({ ...l, key: `${l.productId}|${l.size ?? ''}|${l.color ?? ''}` }))),
+    [],
+  )
 
   const count = lines.reduce((n, l) => n + l.quantity, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.price * l.quantity, 0)
 
   return (
     <CartContext.Provider
-      value={{ lines, count, subtotal, isOpen, openCart, closeCart, addLine, setQuantity, removeLine, clear }}
+      value={{ lines, count, subtotal, isOpen, openCart, closeCart, addLine, setQuantity, removeLine, clear, replaceLines }}
     >
       {children}
     </CartContext.Provider>

@@ -1,8 +1,9 @@
 import type { Session } from '@supabase/supabase-js'
-import { LayoutDashboard, LogOut, Package, ShoppingCart, Store, TicketPercent, Users } from 'lucide-react'
+import { LayoutDashboard, LogOut, MessageSquareText, Package, ShoppingBasket, ShoppingCart, Store, TicketPercent, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 import { supabase, supabaseEnabled } from '../lib/supabase'
+import AbandonedCartsPage from './AbandonedCartsPage'
 import CustomersPage from './CustomersPage'
 import DashboardPage from './DashboardPage'
 import DiscountsPage from './DiscountsPage'
@@ -12,6 +13,7 @@ import OrderDetailPage from './OrderDetailPage'
 import OrdersPage from './OrdersPage'
 import ProductFormPage from './ProductFormPage'
 import ProductsPage from './ProductsPage'
+import ReviewsPage from './ReviewsPage'
 
 type AuthState = 'loading' | 'signed-out' | 'not-admin' | 'admin'
 
@@ -78,6 +80,8 @@ export default function AdminApp() {
         <Route path="orders/:id/invoice" element={<InvoicePage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="discounts" element={<DiscountsPage />} />
+        <Route path="carts" element={<AbandonedCartsPage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/new" element={<ProductFormPage />} />
         <Route path="products/:id" element={<ProductFormPage />} />
@@ -96,39 +100,45 @@ function AdminLayout({ email }: { email: string }) {
   return (
     <div className="min-h-screen bg-shreem-cream print:bg-white">
       <header className="bg-white border-b border-shreem-black/10 sticky top-0 z-30 print:hidden">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
-          <span className="font-display font-black text-lg tracking-tight mr-2">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
+          <span className="font-display font-black text-lg tracking-tight mr-2 whitespace-nowrap">
             SHREEM <span className="text-shreem-gold font-semibold text-sm">Admin</span>
           </span>
           <nav className="flex gap-1 overflow-x-auto">
-            <NavLink to="/admin" end className={link}>
-              <LayoutDashboard className="w-4 h-4" /> <span className="hidden md:inline">Dashboard</span>
+            <NavLink to="/admin" end className={link} title="Dashboard">
+              <LayoutDashboard className="w-4 h-4" /> <span className="hidden xl:inline">Dashboard</span>
             </NavLink>
-            <NavLink to="/admin/orders" className={link}>
-              <ShoppingCart className="w-4 h-4" /> <span className="hidden md:inline">Orders</span>
+            <NavLink to="/admin/orders" className={link} title="Orders">
+              <ShoppingCart className="w-4 h-4" /> <span className="hidden xl:inline">Orders</span>
             </NavLink>
-            <NavLink to="/admin/products" className={link}>
-              <Package className="w-4 h-4" /> <span className="hidden md:inline">Products</span>
+            <NavLink to="/admin/products" className={link} title="Products">
+              <Package className="w-4 h-4" /> <span className="hidden xl:inline">Products</span>
             </NavLink>
-            <NavLink to="/admin/customers" className={link}>
-              <Users className="w-4 h-4" /> <span className="hidden md:inline">Customers</span>
+            <NavLink to="/admin/customers" className={link} title="Customers">
+              <Users className="w-4 h-4" /> <span className="hidden xl:inline">Customers</span>
             </NavLink>
-            <NavLink to="/admin/discounts" className={link}>
-              <TicketPercent className="w-4 h-4" /> <span className="hidden md:inline">Discounts</span>
+            <NavLink to="/admin/discounts" className={link} title="Discounts">
+              <TicketPercent className="w-4 h-4" /> <span className="hidden xl:inline">Discounts</span>
+            </NavLink>
+            <NavLink to="/admin/carts" className={link} title="Carts">
+              <ShoppingBasket className="w-4 h-4" /> <span className="hidden xl:inline">Carts</span>
+            </NavLink>
+            <NavLink to="/admin/reviews" className={link} title="Reviews">
+              <MessageSquareText className="w-4 h-4" /> <span className="hidden xl:inline">Reviews</span>
             </NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1 text-sm text-shreem-gray hover:text-shreem-black px-2">
-              <Store className="w-4 h-4" /> View store
+              <Store className="w-4 h-4" /> <span className="hidden xl:inline whitespace-nowrap">View store</span>
             </a>
-            <span className="hidden md:inline text-xs text-shreem-gray">{email}</span>
+            <span className="hidden 2xl:inline text-xs text-shreem-gray">{email}</span>
             <button onClick={() => supabase.auth.signOut()} className="p-2 rounded-lg hover:bg-shreem-black/5" aria-label="Sign out" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
+      <main className="max-w-7xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
         <Outlet />
       </main>
     </div>

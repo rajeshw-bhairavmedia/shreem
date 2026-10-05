@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Order, OrderStatus } from '../../shared/store'
 import { supabase } from '../lib/supabase'
+import RefundPanel from './RefundPanel'
 import { formatPrice } from '../lib/utils'
 import { StatusBadge, card, formatDate, input } from './shared'
 
@@ -184,11 +185,7 @@ export default function OrderDetailPage() {
               {[order.customer_name, a.line1, a.line2, `${a.city}, ${a.state} ${a.pincode}`, `Phone: ${phone}`].filter(Boolean).join('\n')}
             </p>
           </section>
-          <section className={`${card} p-6 text-sm`}>
-            <h2 className="font-semibold mb-3">Payment</h2>
-            <p className="text-shreem-gray">Paid {order.paid_at ? formatDate(order.paid_at) : '—'}</p>
-            <p className="text-shreem-gray break-all">Razorpay payment: {order.razorpay_payment_id ?? '—'}</p>
-          </section>
+          <RefundPanel order={order} onChange={setOrder} />
         </div>
       </div>
     </div>

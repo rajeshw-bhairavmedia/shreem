@@ -1,12 +1,14 @@
 import { handle, json } from './_lib/http.js'
 import { finalizePayment } from './_lib/orders.js'
 import { isValidWebhookSignature } from './_lib/razorpay.js'
+import { adminDb } from './_lib/supabase.js'
 
 interface WebhookEvent {
   event: string
   payload?: {
     payment?: { entity?: { id?: string; order_id?: string } }
     order?: { entity?: { id?: string } }
+    refund?: { entity?: { id?: string } }
   }
 }
 
@@ -23,6 +25,16 @@ export const POST = handle(async (req) => {
     const payment = event.payload?.payment?.entity
     const orderId = payment?.order_id ?? event.payload?.order?.entity?.id
     if (orderId && payment?.id) await finalizePayment(orderId, payment.id)
+  }
+  if (event.event === 'refund.processed' || event.event === 'refund.failed') {
+    const refundId = event.payload?.refund?.entity?.id
+    if (refundId) {
+      const { error } = await adminDb().rpc('set_refund_status', {
+        p_razorpay_refund_id: refundId,
+        p_status: event.event === 'refund.processed' ? 'processed' : 'failed',
+      })
+      if (error) throw error
+    }
   }
   return json({ ok: true })
 })

@@ -80,7 +80,7 @@ export default function AboutPage() {
                 culture, and contemporary global trends.
               </p>
               <p>
-                We believe true luxury lies in the details — from the choice of fabric and craftsmanship to the fit,
+                We believe true luxury lies in the details, from the choice of fabric and craftsmanship to the fit,
                 finish, and overall experience. Rooted in timeless aesthetics and inspired by the evolving world of
                 fashion, our collections blend traditional influences, modern silhouettes, refined fabrics, and
                 contemporary detailing to create styles that feel both culturally inspired and effortlessly global.
