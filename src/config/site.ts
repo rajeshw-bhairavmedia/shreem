@@ -1,3 +1,5 @@
+import { FREE_SHIPPING_ABOVE } from '../../shared/store'
+
 // Business details used across the site. Replace every value marked TODO
 // with your real details before going live.
 export const site = {
@@ -27,6 +29,6 @@ export const site = {
   },
   instagramHandle: '@shreemlifestyle',
 
-  // Orders at or above this amount (in ₹) ship free.
-  freeShippingAbove: 999,
+  // Shipping charges are set in shared/store.ts.
+  freeShippingAbove: FREE_SHIPPING_ABOVE,
 }

@@ -1,106 +1,145 @@
 # Shreem Lifestyle
 
-The Shreem Lifestyle storefront: React + Vite + Tailwind, with a cart and checkout powered by
-**Shopify** (products, stock, orders) and **Razorpay** (UPI, cards, netbanking) through Shopify's checkout.
+The Shreem Lifestyle online store: the storefront, a Razorpay checkout, and a private admin panel.
 
-The site works in two modes:
+- **Storefront:** React + Vite + Tailwind
+- **Database, admin login and product photos:** [Supabase](https://supabase.com)
+- **Payments:** [Razorpay](https://razorpay.com) (UPI, cards, netbanking, wallets)
+- **Hosting:** [Vercel](https://vercel.com). Hosts the site and the 3 payment functions in `api/`.
 
-| | Without Shopify keys | With Shopify keys |
-|---|---|---|
-| Products | The 7 products in `src/data/products.ts` | Everything in your Shopify admin |
-| Cart | Works (saved in the browser) | Works (saved in the browser) |
-| Checkout | Sends the full order to your WhatsApp | Shopify checkout, paid via Razorpay. A WhatsApp option is also offered |
-| Stock / sold out | Not tracked | Live from Shopify |
+## How an order works
 
-## Running it
+1. The customer adds items to the cart and enters their address at `/checkout`.
+2. `api/create-order` re-reads **prices and stock from the database**, so nothing the browser sends can change
+   the price. It saves the order as "Awaiting payment" and creates a Razorpay order.
+3. The customer pays in the Razorpay window.
+4. `api/verify-payment` checks Razorpay's signature, marks the order **paid**, and reduces stock.
+   `api/razorpay-webhook` does the same from Razorpay's side, in case the customer closes the tab first.
+   Either one counts the order exactly once.
+5. The order appears in **/admin → Orders → To ship**. You pack it, enter the tracking number, and mark it shipped.
 
-Requires Node.js 20+.
+## Managing the store (/admin)
+
+Go to `yourdomain.com/admin` and sign in.
+
+- **Orders:** tabs for To ship, Shipped, Delivered, Cancelled and Awaiting payment (checkouts the customer
+  never paid for). Each order shows the items, the delivery address, a WhatsApp link to the customer, a tracking
+  field and private notes. Cancelling an order does **not** refund it. Refund from the Razorpay dashboard.
+- **Products:** add or edit products and upload photos (the first photo is the main one). Set price, original
+  price (for a sale badge), category (Men / Women / Occasion Wear), style (Casual / Formal / Traditional),
+  colours, and **stock per size**. Untick "Visible in store" to hide a product without deleting it.
+
+Stock goes down automatically when an order is paid. It does not go back up when you cancel. Adjust it by hand.
+
+---
+
+## Going live
+
+You need three free accounts: Supabase, Razorpay and Vercel. Do the steps in this order.
+
+### 1. Supabase (database)
+
+1. Create a project at <https://supabase.com> (choose the Mumbai region).
+2. **Create the tables:** open **SQL Editor**, paste all of `supabase/migrations/20261005000000_store.sql`, and run it.
+3. **Optional starter products:** run `supabase/seed.sql` the same way to add the 7 original products.
+   Their photos come from this website's `public/` folder.
+4. **Turn off public sign-ups:** **Authentication → Sign In / Providers**, turn off "Allow new users to sign up".
+5. **Create your admin login:** **Authentication → Users → Add user** (email + password, auto-confirm). Then in
+   the SQL Editor run:
+   ```sql
+   insert into public.admins (user_id)
+   select id from auth.users where email = 'you@example.com';
+   ```
+6. From **Project Settings → API**, note the Project URL, the `anon` public key and the `service_role` secret key.
+
+### 2. Razorpay (payments)
+
+1. Sign up at <https://razorpay.com>. Test mode works right away. Live payments need KYC, which checks that your
+   website has Privacy, Terms, Refund/Cancellation, Shipping and Contact pages.
+2. **Account & Settings → API Keys:** generate keys (start with **test** keys).
+3. **Account & Settings → Payment capture:** make sure payments are **captured automatically**. Payments that are
+   only authorised get refunded to the customer after a few days.
+4. After deploying (step 3), go to **Webhooks → Add new webhook**:
+   - URL: `https://yourdomain.com/api/razorpay-webhook`
+   - Secret: make up a long random string and keep it for the env vars
+   - Events: `payment.captured` and `order.paid`
+
+### 3. Vercel (hosting)
+
+1. Push this repository to GitHub and import it at <https://vercel.com/new>. The defaults are correct.
+2. Add these **Environment Variables** (Project Settings → Environment Variables):
+
+   | Name | Value |
+   |---|---|
+   | `VITE_SUPABASE_URL` | Supabase Project URL |
+   | `VITE_SUPABASE_ANON_KEY` | Supabase `anon` key |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase `service_role` key (**secret**) |
+   | `RAZORPAY_KEY_ID` | `rzp_test_…` (later `rzp_live_…`) |
+   | `RAZORPAY_KEY_SECRET` | Razorpay key secret (**secret**) |
+   | `RAZORPAY_WEBHOOK_SECRET` | the webhook secret you chose |
+
+3. Deploy, then connect your domain under **Settings → Domains**.
+4. Place a test order with Razorpay's test UPI ID `success@razorpay` and check it appears in `/admin`.
+5. To go live, swap in your `rzp_live_…` keys and redeploy.
+
+### 4. Your details
+
+- `src/config/site.ts`: WhatsApp number, phone, email, address, social links. **Every value marked TODO is a
+  placeholder.**
+- `shared/store.ts`: the shipping fee and free-shipping threshold. These apply to both the website and the
+  amount actually charged.
+- `src/pages/AboutPage.tsx` and `src/pages/ContactPage.tsx`: placeholder stats, timeline and FAQ (marked TODO).
+
+### Optional extras
+
+- **Order emails** ([Resend](https://resend.com)): set `RESEND_API_KEY`, `ORDER_EMAIL_FROM` (an address on a
+  domain verified in Resend) and `ORDER_NOTIFY_EMAIL` (where new-order alerts go). Customers then get a
+  confirmation email and you get an alert for every paid order. Razorpay also emails you about each payment.
+- **Contact form + newsletter by email** ([Formspree](https://formspree.io)): set `VITE_FORMSPREE_ID`. Without
+  it, the contact form sends the message through WhatsApp.
+
+---
+
+## Local development
+
+Requires Node.js 20+ and Docker Desktop.
 
 ```bash
 npm install
-npm run dev        # development server at http://localhost:5173
-npm run build      # production build into dist/
-python serve.py    # serve dist/ at http://localhost:8000
+npx supabase start   # local database, login and storage in Docker (ports 55321-55323)
+npm run dev          # store + checkout API at http://localhost:5173
 ```
 
-## 1. Put in your business details
+The first `supabase start` downloads Docker images. It creates its own containers (`supabase_*_shreem_lifestyle`)
+on ports 553xx, so it can run alongside other local Supabase projects.
 
-Edit **`src/config/site.ts`**. Every value marked `TODO` is a placeholder: WhatsApp number, phone,
-email, address, social links. **The WhatsApp number is a dummy number until you change it.** Orders sent
-before then go nowhere.
+Put the local keys in `.env.local` (`npx supabase status` prints them):
 
-Also review the placeholder content marked `TODO` in `src/pages/AboutPage.tsx` (stats, journey timeline)
-and the FAQs in `src/pages/ContactPage.tsx`.
+```
+VITE_SUPABASE_URL=http://127.0.0.1:55321
+VITE_SUPABASE_ANON_KEY=<ANON_KEY>
+SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY>
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=anything-for-local
+```
 
-## 2. Connect Shopify (products, stock and orders)
+Create a local admin with the same SQL as step 1.5. Local Studio (database browser) is at <http://127.0.0.1:55323>.
+`npx supabase db reset` restores the starter data. `npx supabase stop` stops the containers.
 
-1. Create a Shopify store at <https://www.shopify.com> (the Basic plan is enough).
-2. In Shopify admin: **Sales channels → Add → Headless**, then create a storefront and copy the
-   **public access token** from the Storefront API section.
-3. Copy `.env.example` to `.env` and fill in:
-   ```
-   VITE_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-   VITE_SHOPIFY_STOREFRONT_TOKEN=the-public-token
-   ```
-4. Rebuild (`npm run build`). The site now loads products from Shopify.
-
-### Adding products in Shopify
-
-Use **product tags** to place each product on the site:
-
-| Tag | Effect |
-|---|---|
-| `men`, `women` or `occasion` | Main category (Men / Women / Occasion Wear) |
-| `casual`, `formal` or `traditional` | Style under Men or Women |
-| `new` | "New" badge, shown in New Arrivals |
-| `bestseller` | "Bestseller" badge, shown in Trending Now |
-
-- Add options named **Size** and **Color** to get the size and colour pickers. Each combination is a
-  variant with its own stock.
-- Set a **Compare-at price** higher than the price to show a sale badge and the "% OFF" label.
-- The first product image is used on cards. All images appear on the product page.
-
-## 3. Turn on Razorpay payments
-
-Payments happen on Shopify's secure checkout, so there is no payment code in this site.
-
-1. Create a Razorpay account at <https://razorpay.com> and complete KYC.
-2. In Shopify admin: **Settings → Payments → Add payment methods**, search for **Razorpay**, install
-   it, and connect your Razorpay account.
-3. Place a test order to confirm.
-
-Razorpay's KYC reviews your website. It expects Privacy, Terms, Refund/Cancellation, Shipping and
-Contact pages. Shopify can generate policy templates under **Settings → Policies**. Customise those
-before applying.
-
-## 4. Contact form and newsletter (optional)
-
-Without setup, the contact form opens WhatsApp with the message filled in, and the newsletter opens the
-visitor's email app. To receive both by email instead:
-
-1. Create a free form at <https://formspree.io> using your business email.
-2. Put its ID in `.env`: `VITE_FORMSPREE_ID=xyzabcde`, then rebuild.
-
-## 5. Deploy
-
-Any static host works. The build output is the `dist/` folder.
-
-- **Netlify:** build command `npm run build`, publish directory `dist`. `public/_redirects` handles page routes.
-- **Vercel:** import the repo. `vercel.json` handles page routes.
-
-Add the same `VITE_…` environment variables in the host's settings, since `.env` is not committed.
+Without Supabase keys the site still runs: it shows the 7 built-in products and takes orders on WhatsApp.
 
 ## Project layout
 
 ```
-src/
-  config/site.ts        business details (edit this)
-  data/products.ts      local product list (used without Shopify)
-  data/categories.ts    Men / Women / Occasion Wear, and Casual / Formal / Traditional
-  lib/shopify.ts        Shopify Storefront API: products + checkout
-  lib/utils.ts          prices, WhatsApp orders, search, Formspree
-  context/              catalog and cart state
-  components/           navbar, footer, cart drawer, search, product card
-  pages/                home, collections, product, about, contact
-public/                 images, favicon, logo
+api/                     Vercel functions: create-order, verify-payment, razorpay-webhook
+shared/store.ts          shipping rules, order types (used by site + api)
+supabase/migrations/     database tables, security rules, stock function
+supabase/seed.sql        starter products
+src/config/site.ts       business details (edit this)
+src/admin/               /admin panel (orders, products)
+src/pages/               store pages incl. checkout and order confirmation
+src/components/          navbar, footer, cart drawer, search, product card
+src/context/             catalog and cart state
+public/                  images, favicon, logo
 ```

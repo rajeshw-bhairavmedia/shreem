@@ -3,6 +3,7 @@ import { ArrowLeft, Check, MessageCircle, RefreshCcw, Share2, Shield, ShoppingBa
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
+import { MAX_QUANTITY_PER_ITEM } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
@@ -24,9 +25,9 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!product) return
-    const firstAvailable = product.variants?.find((v) => v.available)
-    setSize(firstAvailable?.size ?? product.sizes[0] ?? '')
-    setColor(firstAvailable?.color ?? product.colors[0] ?? '')
+    const firstInStock = product.sizes.find((s) => !product.stock || (product.stock[s] ?? 1) > 0)
+    setSize(firstInStock ?? product.sizes[0] ?? '')
+    setColor(product.colors[0] ?? '')
     setQuantity(1)
     setImageIndex(0)
   }, [product])
@@ -51,20 +52,16 @@ export default function ProductPage() {
   // Old numeric links (/product/3) redirect to the product's slug.
   if (product.id !== id) return <Navigate to={`/product/${product.id}`} replace />
 
-  const variants = product.variants
-  const variant = variants?.find(
-    (v) => (!product.sizes.length || v.size === size) && (!product.colors.length || v.color === color),
-  )
-  const price = variant?.price ?? product.price
-  const compareAt = variants ? variant?.compareAtPrice : product.originalPrice
-  const originalPrice = compareAt && compareAt > price ? compareAt : undefined
-  const available = variants ? !!variant?.available : product.available
-  const sizeInStock = (s: string) =>
-    !variants || variants.some((v) => v.size === s && (!color || v.color === color) && v.available)
+  const { price, originalPrice } = product
+  // Stock is tracked per size; sizes missing from the stock map are treated as unlimited.
+  const stockFor = (s: string) => (product.stock ? (product.stock[s] ?? Infinity) : Infinity)
+  const sizeInStock = (s: string) => stockFor(s) > 0
+  const maxQuantity = Math.min(MAX_QUANTITY_PER_ITEM, product.sizes.length ? stockFor(size) : Infinity)
+  const available = product.sizes.length ? sizeInStock(size) : product.available
+  const lowStock = Number.isFinite(stockFor(size)) && stockFor(size) > 0 && stockFor(size) <= 3
 
   const line = {
     productId: product.id,
-    variantId: variant?.id,
     name: product.name,
     image: product.images[0],
     price,
@@ -201,7 +198,10 @@ export default function ProductPage() {
                   {product.sizes.map((s) => (
                     <button
                       key={s}
-                      onClick={() => setSize(s)}
+                      onClick={() => {
+                        setSize(s)
+                        setQuantity((q) => Math.max(1, Math.min(q, stockFor(s), MAX_QUANTITY_PER_ITEM)))
+                      }}
                       className={`min-w-12 h-12 px-3 rounded-lg text-sm font-medium border-2 transition-all duration-300 ${
                         size === s ? 'border-shreem-black bg-shreem-black text-white' : 'border-shreem-black/10 hover:border-shreem-black/30'
                       } ${sizeInStock(s) ? '' : 'line-through opacity-50'}`}
@@ -220,10 +220,16 @@ export default function ProductPage() {
                   -
                 </button>
                 <span className="w-10 text-center font-medium">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-shreem-black/5 transition-colors" aria-label="Increase quantity">
+                <button
+                  onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+                  disabled={quantity >= maxQuantity}
+                  className="w-10 h-10 flex items-center justify-center hover:bg-shreem-black/5 transition-colors disabled:opacity-30"
+                  aria-label="Increase quantity"
+                >
                   +
                 </button>
               </div>
+              {lowStock && <p className="text-sm text-red-600 mt-2">Only {stockFor(size)} left in this size</p>}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-4">

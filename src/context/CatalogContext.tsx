@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { legacyProductIds, localProducts } from '../data/products'
-import { fetchShopifyProducts, shopifyEnabled } from '../lib/shopify'
+import { fetchProducts, supabaseEnabled } from '../lib/supabase'
 import type { Product } from '../types'
 
 interface CatalogState {
@@ -12,18 +12,14 @@ interface CatalogState {
 const CatalogContext = createContext<CatalogState | null>(null)
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(shopifyEnabled ? [] : localProducts)
-  const [loading, setLoading] = useState(shopifyEnabled)
+  const [products, setProducts] = useState<Product[]>(supabaseEnabled ? [] : localProducts)
+  const [loading, setLoading] = useState(supabaseEnabled)
 
   useEffect(() => {
-    if (!shopifyEnabled) return
-    fetchShopifyProducts()
+    if (!supabaseEnabled) return
+    fetchProducts()
       .then(setProducts)
-      .catch((err) => {
-        // Keep the site usable (WhatsApp ordering) if Shopify is unreachable.
-        console.error('Failed to load Shopify products, using local catalog:', err)
-        setProducts(localProducts)
-      })
+      .catch((err) => console.error('Failed to load products:', err))
       .finally(() => setLoading(false))
   }, [])
 

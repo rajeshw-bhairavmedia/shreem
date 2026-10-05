@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { createCheckout, shopifyEnabled } from '../lib/shopify'
 import { openWhatsApp, orderMessage } from '../lib/utils'
 import type { CartLine } from '../types'
 
@@ -15,8 +14,7 @@ interface CartState {
   addLine: (line: Omit<CartLine, 'key'>) => void
   setQuantity: (key: string, quantity: number) => void
   removeLine: (key: string) => void
-  /** Shopify checkout when every line maps to a Shopify variant, otherwise a WhatsApp order. */
-  checkout: () => Promise<void>
+  clear: () => void
   orderOnWhatsApp: () => void
 }
 
@@ -25,7 +23,8 @@ const CartContext = createContext<CartState | null>(null)
 function loadLines(): CartLine[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as CartLine[]) : []
+    const lines = raw ? (JSON.parse(raw) as CartLine[]) : []
+    return Array.isArray(lines) ? lines : []
   } catch {
     return []
   }
@@ -46,7 +45,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [lines])
 
   const addLine = (line: Omit<CartLine, 'key'>) => {
-    const key = line.variantId ?? `${line.productId}|${line.size ?? ''}|${line.color ?? ''}`
+    const key = `${line.productId}|${line.size ?? ''}|${line.color ?? ''}`
     setLines((prev) => {
       const existing = prev.find((l) => l.key === key)
       if (existing) {
@@ -64,39 +63,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
 
   const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key))
-
+  const clear = useCallback(() => setLines([]), [])
   const orderOnWhatsApp = () => openWhatsApp(orderMessage(lines))
-
-  const checkout = async () => {
-    if (!lines.length) return
-    if (shopifyEnabled && lines.every((l) => l.variantId)) {
-      const url = await createCheckout(
-        lines.map((l) => ({ variantId: l.variantId as string, quantity: l.quantity })),
-      )
-      window.location.href = url
-      return
-    }
-    orderOnWhatsApp()
-  }
 
   const count = lines.reduce((n, l) => n + l.quantity, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.price * l.quantity, 0)
 
   return (
     <CartContext.Provider
-      value={{
-        lines,
-        count,
-        subtotal,
-        isOpen,
-        openCart,
-        closeCart,
-        addLine,
-        setQuantity,
-        removeLine,
-        checkout,
-        orderOnWhatsApp,
-      }}
+      value={{ lines, count, subtotal, isOpen, openCart, closeCart, addLine, setQuantity, removeLine, clear, orderOnWhatsApp }}
     >
       {children}
     </CartContext.Provider>

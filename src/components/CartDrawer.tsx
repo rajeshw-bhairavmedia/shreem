@@ -1,15 +1,14 @@
 import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { MAX_QUANTITY_PER_ITEM, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
-import { shopifyEnabled } from '../lib/shopify'
+import { supabaseEnabled } from '../lib/supabase'
 import { formatPrice } from '../lib/utils'
 
 export default function CartDrawer() {
-  const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal, checkout, orderOnWhatsApp } = useCart()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal, orderOnWhatsApp } = useCart()
 
   useEffect(() => {
     if (!isOpen) return
@@ -22,19 +21,8 @@ export default function CartDrawer() {
     }
   }, [isOpen, closeCart])
 
-  const handleCheckout = async () => {
-    setError(null)
-    setBusy(true)
-    try {
-      await checkout()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const remaining = site.freeShippingAbove - subtotal
+  const shipping = shippingFor(subtotal)
 
   return (
     <div
@@ -82,16 +70,18 @@ export default function CartDrawer() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-xs text-shreem-gray mt-1">
-                      {[line.size, line.color].filter(Boolean).join(' / ')}
-                    </p>
+                    <p className="text-xs text-shreem-gray mt-1">{[line.size, line.color].filter(Boolean).join(' / ')}</p>
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center border border-shreem-black/10 rounded-lg">
                         <button onClick={() => setQuantity(line.key, line.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-shreem-black/5" aria-label="Decrease quantity">
                           <Minus className="w-3 h-3" />
                         </button>
                         <span className="w-8 text-center text-sm font-medium">{line.quantity}</span>
-                        <button onClick={() => setQuantity(line.key, line.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-shreem-black/5" aria-label="Increase quantity">
+                        <button
+                          onClick={() => setQuantity(line.key, Math.min(MAX_QUANTITY_PER_ITEM, line.quantity + 1))}
+                          className="w-8 h-8 flex items-center justify-center hover:bg-shreem-black/5"
+                          aria-label="Increase quantity"
+                        >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
@@ -104,26 +94,29 @@ export default function CartDrawer() {
 
             <div className="px-6 py-5 border-t border-shreem-black/10 bg-white/60">
               <p className="text-xs text-shreem-gray mb-3">
-                {remaining > 0
-                  ? `Add ${formatPrice(remaining)} more for free shipping.`
-                  : 'Your order ships free.'}
+                {remaining > 0 ? `Add ${formatPrice(remaining)} more for free shipping.` : 'Your order ships free.'}
               </p>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-shreem-gray">Subtotal</span>
                 <span className="text-lg font-semibold">{formatPrice(subtotal)}</span>
               </div>
               <p className="text-xs text-shreem-gray mb-4">
-                {shopifyEnabled
-                  ? 'Shipping and taxes calculated at checkout.'
+                {supabaseEnabled
+                  ? `Shipping: ${shipping ? formatPrice(shipping) : 'Free'}. Pay securely by UPI, card or netbanking.`
                   : "We'll confirm availability and delivery on WhatsApp."}
               </p>
-              {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-              <button onClick={handleCheckout} disabled={busy} className="w-full btn-gold disabled:opacity-60">
-                {busy ? 'Starting checkout…' : shopifyEnabled ? 'Checkout' : 'Order on WhatsApp'}
-              </button>
-              {shopifyEnabled && (
-                <button onClick={orderOnWhatsApp} className="w-full mt-3 text-sm text-shreem-gray hover:text-shreem-black transition-colors">
-                  or order on WhatsApp
+              {supabaseEnabled ? (
+                <>
+                  <Link to="/checkout" onClick={closeCart} className="w-full btn-gold">
+                    Checkout
+                  </Link>
+                  <button onClick={orderOnWhatsApp} className="w-full mt-3 text-sm text-shreem-gray hover:text-shreem-black transition-colors">
+                    or order on WhatsApp
+                  </button>
+                </>
+              ) : (
+                <button onClick={orderOnWhatsApp} className="w-full btn-gold">
+                  Order on WhatsApp
                 </button>
               )}
             </div>
