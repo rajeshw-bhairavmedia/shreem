@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { ChevronDown, Funnel, Grid3x3, LayoutList, X } from 'lucide-react'
+import { ChevronDown, Grid3x3, LayoutList, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
@@ -111,58 +111,45 @@ export default function CollectionsPage() {
         )}
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-10 mb-8">
-        <div className="flex flex-wrap gap-3">
-          {categoryOptions.map((c) => (
+      <div className="px-4 sm:px-6 lg:px-10 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-4 border-y border-shreem-black/10">
+          {/* Main Category Row */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {categoryOptions.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                className={`px-5 py-2 text-sm ${pill(
+                  category === c.id,
+                  'bg-shreem-black text-white shadow-sm',
+                  'bg-white text-shreem-black hover:bg-shreem-black/5 border border-shreem-black/10',
+                )}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Right Controls: Filter button, Grid/List view options, and Sort dropdown */}
+          <div className="flex items-center gap-3 self-end lg:self-auto">
+            {/* Filter button */}
             <button
-              key={c.id}
-              onClick={() => setCategory(c.id)}
-              className={`px-6 py-2.5 text-sm ${pill(
-                category === c.id,
-                'bg-shreem-black text-white',
-                'bg-white text-shreem-black hover:bg-shreem-black/5',
-              )}`}
+              onClick={() => setFiltersOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                filter !== 'all' || style !== 'all'
+                  ? 'bg-shreem-gold text-shreem-black shadow-sm font-semibold'
+                  : 'bg-white hover:bg-shreem-black/5 text-shreem-black border border-shreem-black/10'
+              }`}
+              aria-label="Open filters"
             >
-              {c.label}
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Filters</span>
+              {(filter !== 'all' || style !== 'all') && (
+                <span className="w-2 h-2 rounded-full bg-shreem-black" />
+              )}
             </button>
-          ))}
-        </div>
-      </div>
 
-      {hasStyles(category) && (
-        <div className="px-4 sm:px-6 lg:px-10 -mt-4 mb-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-shreem-gray mr-2">Style:</span>
-            {styleRow('sm')}
-          </div>
-        </div>
-      )}
-
-      <div className="px-4 sm:px-6 lg:px-10 mb-8">
-        <div className="flex items-center justify-between py-4 border-y border-shreem-black/10">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setFiltersOpen(true)} className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium">
-              <Funnel className="w-4 h-4" />
-              Filter
-            </button>
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-sm text-shreem-gray mr-2">Filter:</span>
-              {filterOptions.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={`px-4 py-1.5 text-xs ${pill(
-                    filter === f.id,
-                    'bg-shreem-gold text-shreem-black',
-                    'bg-shreem-black/5 text-shreem-black hover:bg-shreem-black/10',
-                  )}`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
+            {/* Grid/List view options */}
             <div className="hidden sm:flex items-center gap-1 bg-shreem-black/5 rounded-lg p-1">
               <button
                 onClick={() => setView('grid')}
@@ -179,11 +166,13 @@ export default function CollectionsPage() {
                 <LayoutList className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Sort / Featured dropdown */}
             <div className="relative">
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="appearance-none px-4 py-2 pr-10 bg-white rounded-lg text-sm font-medium focus:outline-none cursor-pointer"
+                className="appearance-none px-4 py-2 pr-10 bg-white rounded-lg text-sm font-medium border border-shreem-black/10 focus:outline-none cursor-pointer"
                 aria-label="Sort products"
               >
                 {sortOptions.map((s) => (
@@ -192,11 +181,36 @@ export default function CollectionsPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-shreem-gray" />
             </div>
           </div>
         </div>
       </div>
+
+      {hasStyles(category) && (
+        <div className="px-4 sm:px-6 lg:px-10 -mt-2 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-shreem-gray mr-2">Style:</span>
+            {styleRow('sm')}
+          </div>
+        </div>
+      )}
+
+      {filter !== 'all' && (
+        <div className="px-4 sm:px-6 lg:px-10 -mt-2 mb-6 flex items-center gap-2">
+          <span className="text-xs text-shreem-gray">Active filter:</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-shreem-gold text-shreem-black text-xs font-semibold rounded-full shadow-sm">
+            {filterOptions.find((f) => f.id === filter)?.label ?? filter}
+            <button
+              onClick={() => setFilter('all')}
+              className="hover:opacity-70 p-0.5"
+              aria-label="Remove filter"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className="px-4 sm:px-6 lg:px-10 mb-6">
         <p className="text-sm text-shreem-gray">
@@ -224,62 +238,97 @@ export default function CollectionsPage() {
         </div>
       )}
 
-      {/* Mobile filter sheet */}
+      {/* Filter drawer (bottom sheet on mobile, slide-over on tablet/desktop) */}
       <div
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
+        className={`fixed inset-0 z-50 transition-all duration-300 ${
           filtersOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
         }`}
       >
-        <div className="absolute inset-0 bg-shreem-black/20 backdrop-blur-sm" onClick={() => setFiltersOpen(false)} />
+        <div className="absolute inset-0 bg-shreem-black/30 backdrop-blur-sm" onClick={() => setFiltersOpen(false)} />
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transition-transform duration-300 ${
-            filtersOpen ? 'translate-y-0' : 'translate-y-full'
+          className={`absolute bottom-0 md:bottom-auto md:top-0 md:right-0 md:h-full w-full md:max-w-md bg-white rounded-t-3xl md:rounded-none md:shadow-2xl transition-transform duration-300 flex flex-col max-h-[85vh] md:max-h-full ${
+            filtersOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'
           }`}
         >
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Filters</h3>
-              <button onClick={() => setFiltersOpen(false)} className="p-2 hover:bg-shreem-black/5 rounded-full" aria-label="Close filters">
+          <div className="p-6 border-b border-shreem-black/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-5 h-5 text-shreem-black" />
+              <h3 className="text-lg font-semibold text-shreem-black">Filters</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {(filter !== 'all' || style !== 'all') && (
+                <button
+                  onClick={() => {
+                    setFilter('all')
+                    setStyle('all')
+                  }}
+                  className="text-xs text-shreem-gray hover:text-shreem-black underline"
+                >
+                  Reset all
+                </button>
+              )}
+              <button
+                onClick={() => setFiltersOpen(false)}
+                className="p-2 hover:bg-shreem-black/5 rounded-full transition-colors"
+                aria-label="Close filters"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-medium mb-3">Category</h4>
-                <div className="flex flex-wrap gap-2">
-                  {categoryOptions.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setCategory(c.id)}
-                      className={`px-4 py-2 text-sm ${pill(category === c.id, 'bg-shreem-black text-white', 'bg-shreem-black/5 text-shreem-black')}`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {hasStyles(category) && (
-                <div>
-                  <h4 className="text-sm font-medium mb-3">Style</h4>
-                  <div className="flex flex-wrap gap-2">{styleRow('md')}</div>
-                </div>
-              )}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Filter By</h4>
-                <div className="flex flex-wrap gap-2">
-                  {filterOptions.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`px-4 py-2 text-sm ${pill(filter === f.id, 'bg-shreem-gold text-shreem-black', 'bg-shreem-black/5 text-shreem-black')}`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
+          </div>
+
+          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            {/* Filter by Special Collections / Status */}
+            <div>
+              <h4 className="text-sm font-medium mb-3 text-shreem-black">Collections & Deals</h4>
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={`px-4 py-2 text-sm ${pill(
+                      filter === f.id,
+                      'bg-shreem-gold text-shreem-black shadow-sm font-semibold',
+                      'bg-shreem-black/5 text-shreem-black hover:bg-shreem-black/10',
+                    )}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
-            <button onClick={() => setFiltersOpen(false)} className="w-full btn-primary mt-8">
+
+            {/* Category */}
+            <div>
+              <h4 className="text-sm font-medium mb-3 text-shreem-black">Category</h4>
+              <div className="flex flex-wrap gap-2">
+                {categoryOptions.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setCategory(c.id)}
+                    className={`px-4 py-2 text-sm ${pill(
+                      category === c.id,
+                      'bg-shreem-black text-white shadow-sm',
+                      'bg-shreem-black/5 text-shreem-black hover:bg-shreem-black/10',
+                    )}`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Style */}
+            {hasStyles(category) && (
+              <div>
+                <h4 className="text-sm font-medium mb-3 text-shreem-black">Style</h4>
+                <div className="flex flex-wrap gap-2">{styleRow('md')}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-shreem-black/10 bg-shreem-cream/20">
+            <button onClick={() => setFiltersOpen(false)} className="w-full btn-primary py-3 text-center">
               Show {shown.length} Product{shown.length !== 1 ? 's' : ''}
             </button>
           </div>
