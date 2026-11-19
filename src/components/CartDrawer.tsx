@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom'
 import { MAX_QUANTITY_PER_ITEM, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
-import { formatPrice } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
 
 export default function CartDrawer() {
+  const { formatPrice } = useCurrency()
   const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal } = useCart()
 
   useEffect(() => {

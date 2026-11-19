@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { categoryLabel, formatPrice } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
+import { categoryLabel } from '../lib/utils'
 import type { Product } from '../types'
 
 type Badge = 'new' | 'bestseller' | 'sale'
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function ProductCard({ product: p, badges = [], detailed = false, list = false }: Props) {
+  const { formatPrice } = useCurrency()
   const show = (b: Badge) => badges.includes(b)
 
   return (

@@ -6,7 +6,8 @@ import { site } from '../config/site'
 import { getCartId, useCart } from '../context/CartContext'
 import { loadRazorpay, openRazorpay, type RazorpayResponse } from '../lib/razorpay'
 import { supabaseEnabled } from '../lib/supabase'
-import { formatPrice } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
+import { formatPrice as formatInr } from '../lib/utils'
 
 const DETAILS_KEY = 'shreem-checkout-details'
 const emptyDetails = { name: '', email: '', phone: '', line1: '', line2: '', city: '', state: '', pincode: '' }
@@ -36,6 +37,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 
 export default function CheckoutPage() {
   const { lines, subtotal, clear } = useCart()
+  const { formatPrice, converted, country } = useCurrency()
   const [details, setDetails] = useState<Details>(loadDetails)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -328,8 +330,15 @@ export default function CheckoutPage() {
 
             <button type="submit" disabled={busy} className="w-full btn-gold gap-2 mt-6 disabled:opacity-60">
               <Lock className="w-4 h-4" />
-              {busy ? 'Processing…' : `Pay ${formatPrice(total)}`}
+              {busy ? 'Processing…' : `Pay ${formatInr(total)}`}
             </button>
+            {converted && (
+              <p className="text-xs text-shreem-gray mt-3">
+                Prices in {country.currency} are approximate, converted at today&apos;s exchange rate. Your payment is charged
+                in Indian Rupees: <span className="font-medium text-shreem-black">{formatInr(total)}</span>. Your bank may
+                apply its own conversion rate.
+              </p>
+            )}
             <p className="text-xs text-shreem-gray text-center mt-3">
               Secure payment by Razorpay · UPI, cards, netbanking, wallets
             </p>
