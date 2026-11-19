@@ -45,7 +45,7 @@ export default function CollectionsPage() {
       if (value === 'all' || !value) next.delete(key)
       else next.set(key, value)
     }
-    setParams(next)
+    setParams(next, { state: { keepScroll: true } })
   }
   const setCategory = (id: string) => update({ category: id, sub: 'all' })
   const setStyle = (id: string) => update({ sub: id })
@@ -232,7 +232,7 @@ export default function CollectionsPage() {
       {!loading && shown.length === 0 && (
         <div className="px-4 sm:px-6 lg:px-10 py-20 text-center">
           <p className="text-lg text-shreem-gray mb-4">No products found matching your filters.</p>
-          <button onClick={() => setParams({})} className="btn-outline">
+          <button onClick={() => setParams({}, { state: { keepScroll: true } })} className="btn-outline">
             Clear Filters
           </button>
         </div>
