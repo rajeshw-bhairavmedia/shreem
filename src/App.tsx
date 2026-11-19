@@ -8,6 +8,7 @@ import SearchOverlay from './components/SearchOverlay'
 import WhatsAppButton from './components/WhatsAppButton'
 import { CartProvider } from './context/CartContext'
 import { CatalogProvider } from './context/CatalogContext'
+import { CurrencyProvider } from './context/CurrencyContext'
 import AboutPage from './pages/AboutPage'
 import CheckoutPage from './pages/CheckoutPage'
 import CollectionsPage from './pages/CollectionsPage'
@@ -27,6 +28,7 @@ function Store() {
   const closeSearch = useCallback(() => setSearchOpen(false), [])
 
   return (
+    <CurrencyProvider>
     <CatalogProvider>
       <CartProvider>
         <div className="relative min-h-screen bg-shreem-cream">
@@ -53,6 +55,7 @@ function Store() {
         </div>
       </CartProvider>
     </CatalogProvider>
+    </CurrencyProvider>
   )
 }
 

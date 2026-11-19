@@ -3,7 +3,8 @@ import { Clock, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { FacebookIcon, InstagramIcon, LinkedinIcon } from '../components/SocialIcons'
 import { site } from '../config/site'
-import { formatPrice, formsEnabled, openWhatsApp, submitForm } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
+import { formsEnabled, openWhatsApp, submitForm } from '../lib/utils'
 
 const contactItems = [
   { icon: Phone, label: 'Phone', value: site.phone.display, href: site.phone.href },
@@ -18,7 +19,7 @@ const contactItems = [
 ]
 
 // TODO: confirm these match your actual policies.
-const faqs = [
+const getFaqs = (formatPrice: (inr: number) => string) => [
   {
     q: 'What is your shipping policy?',
     a: `We offer free shipping on all orders above ${formatPrice(site.freeShippingAbove)}. Orders are typically delivered within 5-7 business days across India.`,
@@ -42,6 +43,8 @@ const inputClass =
   'w-full h-12 px-4 rounded-lg border border-shreem-black/10 bg-white text-sm focus:outline-none focus:border-shreem-gold transition-colors'
 
 export default function ContactPage() {
+  const { formatPrice } = useCurrency()
+  const faqs = getFaqs(formatPrice)
   const [form, setForm] = useState(emptyForm)
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'whatsapp' | 'error'>('idle')
   const infoRef = useRef<HTMLDivElement>(null)

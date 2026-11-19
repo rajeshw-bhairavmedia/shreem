@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
+import CountrySelector from './CountrySelector'
 import { styles } from '../data/categories'
 
 const navLinks = [
@@ -72,6 +73,7 @@ export default function Navbar({ onSearch }: { onSearch: () => void }) {
           </nav>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            <CountrySelector />
             <button
               onClick={onSearch}
               className="p-2 hover:bg-shreem-black/5 rounded-full transition-colors"

@@ -2,9 +2,11 @@ import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCatalog } from '../context/CatalogContext'
-import { formatPrice, matchesQuery } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
+import { matchesQuery } from '../lib/utils'
 
 export default function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { formatPrice } = useCurrency()
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const { products } = useCatalog()

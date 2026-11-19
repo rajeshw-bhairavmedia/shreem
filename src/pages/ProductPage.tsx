@@ -8,9 +8,11 @@ import { MAX_QUANTITY_PER_ITEM } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
-import { categoryLabel, formatPrice, openWhatsApp } from '../lib/utils'
+import { useCurrency } from '../context/CurrencyContext'
+import { categoryLabel, openWhatsApp } from '../lib/utils'
 
 export default function ProductPage() {
+  const { formatPrice } = useCurrency()
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { products, loading, getProduct } = useCatalog()
