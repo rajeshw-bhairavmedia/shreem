@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronLeft, ChevronRight, ImagePlus, Trash2, X } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { CURRENCIES, currencySymbols, getLiveRates, isCurrency, toInr, type CurrencyCode, type Rates } from '../lib/fx'
 import { supabase, type ProductRow } from '../lib/supabase'
 import type { Category, Style } from '../types'
 import { card, input } from './shared'
@@ -16,6 +17,7 @@ interface FormState {
   name: string
   slug: string
   description: string
+  price_currency: CurrencyCode
   price: string
   original_price: string
   category: Category
@@ -35,6 +37,7 @@ const blank: FormState = {
   name: '',
   slug: '',
   description: '',
+  price_currency: 'INR',
   price: '',
   original_price: '',
   category: 'women',
@@ -57,13 +60,34 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
+const currencyNames: Record<CurrencyCode, string> = {
+  INR: 'Indian Rupee',
+  USD: 'US Dollar',
+  GBP: 'British Pound',
+  EUR: 'Euro',
+  RUB: 'Russian Ruble',
+  AED: 'UAE Dirham',
+  CAD: 'Canadian Dollar',
+  AUD: 'Australian Dollar',
+}
+
+const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`
+
+/** More than zero, with at most 2 decimal places. */
+const validAmount = (n: number) => Number.isFinite(n) && n > 0 && Math.abs(Math.round(n * 100) - n * 100) < 1e-6
+
 function fromRow(p: ProductRow): FormState {
+  // Show the amounts in the currency the admin typed them in; older products are rupees.
+  const foreign = isCurrency(p.price_currency) && p.price_currency !== 'INR' && p.entered_price != null
   return {
     name: p.name,
     slug: p.slug,
     description: p.description,
-    price: String(p.price),
-    original_price: p.original_price ? String(p.original_price) : '',
+    price_currency: foreign ? (p.price_currency as CurrencyCode) : 'INR',
+    price: String(foreign ? p.entered_price : p.price),
+    original_price: foreign
+      ? p.entered_original_price != null ? String(p.entered_original_price) : ''
+      : p.original_price ? String(p.original_price) : '',
     category: p.category,
     style: p.style ?? '',
     images: p.images,
@@ -88,6 +112,22 @@ export default function ProductFormPage() {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [rates, setRates] = useState<Rates | null>(null)
+  const [ratesError, setRatesError] = useState<string | null>(null)
+
+  // Live exchange rates, needed to convert a non-rupee price to rupees.
+  const foreign = form.price_currency !== 'INR'
+  useEffect(() => {
+    if (!foreign || rates) return
+    let cancelled = false
+    setRatesError(null)
+    getLiveRates()
+      .then((r) => !cancelled && setRates(r))
+      .catch(() => !cancelled && setRatesError('Could not load exchange rates. Check your connection, or enter the price in INR.'))
+    return () => {
+      cancelled = true
+    }
+  }, [foreign, rates])
 
   useEffect(() => {
     if (isNew) return
@@ -145,14 +185,43 @@ export default function ProductFormPage() {
   const save = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
-    const price = Number(form.price)
-    const originalPrice = form.original_price ? Number(form.original_price) : null
+    const currency = form.price_currency
+    const enteredPrice = Number(form.price)
+    const enteredOriginal = form.original_price ? Number(form.original_price) : null
     const sizes = form.sizes.filter((s) => s.size.trim())
     const sizeNames = sizes.map((s) => s.size.trim())
 
-    if (!Number.isInteger(price) || price <= 0) return setError('Price must be a whole number of rupees.')
-    if (originalPrice !== null && (!Number.isInteger(originalPrice) || originalPrice <= price)) {
+    if (currency === 'INR') {
+      if (!Number.isInteger(enteredPrice) || enteredPrice <= 0) return setError('Price must be a whole number of rupees.')
+    } else if (!validAmount(enteredPrice)) {
+      return setError('Price must be more than 0, with at most 2 decimal places.')
+    }
+    if (
+      enteredOriginal !== null &&
+      (!(currency === 'INR' ? Number.isInteger(enteredOriginal) : validAmount(enteredOriginal)) || enteredOriginal <= enteredPrice)
+    ) {
       return setError('"Original price" must be higher than the price (or left empty).')
+    }
+
+    // Checkout charges in rupees, so a non-rupee price is converted at today's rate.
+    let price = enteredPrice
+    let originalPrice = enteredOriginal
+    if (currency !== 'INR') {
+      let live = rates
+      if (!live) {
+        try {
+          live = await getLiveRates()
+          setRates(live)
+        } catch {
+          return setError('Could not load exchange rates to convert this price to rupees. Please try again.')
+        }
+      }
+      price = toInr(enteredPrice, currency, live)
+      originalPrice = enteredOriginal === null ? null : toInr(enteredOriginal, currency, live)
+      if (price < 1) return setError('This price is less than ₹1 after conversion.')
+      if (originalPrice !== null && originalPrice <= price) {
+        return setError('"Original price" is not higher than the price once converted to rupees. Increase it slightly.')
+      }
     }
     if (new Set(sizeNames).size !== sizeNames.length) return setError('Each size can only be listed once.')
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.slug)) return setError('Web address may only use lowercase letters, numbers and dashes.')
@@ -163,6 +232,9 @@ export default function ProductFormPage() {
       description: form.description.trim(),
       price,
       original_price: originalPrice,
+      price_currency: currency,
+      entered_price: enteredPrice,
+      entered_original_price: enteredOriginal,
       category: form.category,
       style: form.category === 'occasion' ? null : form.style || null,
       images: form.images,
@@ -185,7 +257,11 @@ export default function ProductFormPage() {
       : await supabase.from('products').update(row).eq('id', id!)
     setBusy(false)
     if (error) {
-      return setError(error.code === '23505' ? 'Another product already uses this web address. Change it slightly.' : error.message)
+      if (error.code === '23505') return setError('Another product already uses this web address. Change it slightly.')
+      if (/price_currency|entered_(original_)?price/.test(error.message)) {
+        return setError('The database is missing the price currency columns. Run migration 20261120000000_product_price_currency.sql in Supabase, then save again.')
+      }
+      return setError(error.message)
     }
     navigate('/admin/products')
   }
@@ -332,14 +408,60 @@ export default function ProductFormPage() {
         <div className="space-y-6">
           <section className={`${card} p-6 space-y-4`}>
             <div>
-              <label htmlFor="price" className="text-sm font-medium">Price (₹)</label>
-              <input id="price" type="number" min={1} required value={form.price} onChange={(e) => set('price', e.target.value)} className={`${input} mt-1`} />
+              <label htmlFor="price_currency" className="text-sm font-medium">Currency</label>
+              <select
+                id="price_currency"
+                value={form.price_currency}
+                onChange={(e) => set('price_currency', e.target.value as CurrencyCode)}
+                className={`${input} mt-1`}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c} ({currencySymbols[c]}) · {currencyNames[c]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
-              <label htmlFor="original_price" className="text-sm font-medium">Original price (₹)</label>
-              <input id="original_price" type="number" min={1} value={form.original_price} onChange={(e) => set('original_price', e.target.value)} className={`${input} mt-1`} />
+              <label htmlFor="price" className="text-sm font-medium">Price ({currencySymbols[form.price_currency]})</label>
+              <input
+                id="price"
+                type="number"
+                min={foreign ? 0.01 : 1}
+                step={foreign ? 0.01 : 1}
+                required
+                value={form.price}
+                onChange={(e) => set('price', e.target.value)}
+                className={`${input} mt-1`}
+              />
+              {foreign && rates && Number(form.price) > 0 && (
+                <p className="text-xs text-shreem-gray mt-1">≈ {rupees(toInr(Number(form.price), form.price_currency, rates))} at today&apos;s rate</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="original_price" className="text-sm font-medium">Original price ({currencySymbols[form.price_currency]})</label>
+              <input
+                id="original_price"
+                type="number"
+                min={foreign ? 0.01 : 1}
+                step={foreign ? 0.01 : 1}
+                value={form.original_price}
+                onChange={(e) => set('original_price', e.target.value)}
+                className={`${input} mt-1`}
+              />
+              {foreign && rates && Number(form.original_price) > 0 && (
+                <p className="text-xs text-shreem-gray mt-1">≈ {rupees(toInr(Number(form.original_price), form.price_currency, rates))} at today&apos;s rate</p>
+              )}
               <p className="text-xs text-shreem-gray mt-1">Optional. Fill in to show a sale with % off.</p>
             </div>
+            {foreign && (
+              <p className="text-xs text-shreem-gray bg-shreem-cream rounded-lg px-3 py-2">
+                {rates
+                  ? `1 ${form.price_currency} = ${rupees(Math.round((1 / rates[form.price_currency]) * 100) / 100)}. `
+                  : (ratesError ?? 'Loading exchange rate… ')}
+                Customers pay in rupees, so the price is converted to INR when you save. Re-save to update it to a newer rate.
+              </p>
+            )}
           </section>
 
           <section className={`${card} p-6 space-y-4`}>
