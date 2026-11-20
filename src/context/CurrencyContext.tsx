@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FALLBACK_RATES, getLiveRates, loadCachedRates, type CurrencyCode, type Rates } from '../lib/fx'
+import type { Product } from '../types'
 
 // Product prices are stored in INR. Shoppers pick a country and see prices
 // converted to its currency. Payment is still charged in INR by Razorpay.
@@ -44,9 +45,18 @@ interface CurrencyValue {
   setCountry: (code: CountryCode) => void
   /** Formats an INR amount in the selected country's currency. */
   formatPrice: (inr: number) => string
+  /** Formats an amount that is already in the selected currency. */
+  formatAmount: (amount: number) => string
+  /**
+   * A product's price in the selected currency: the admin-set price for that
+   * currency when there is one, otherwise converted from rupees.
+   */
+  productPrice: (p: PricedProduct) => { price: number; originalPrice?: number; manual: boolean }
   /** True when prices are shown in a currency other than INR. */
   converted: boolean
 }
+
+type PricedProduct = Pick<Product, 'price' | 'originalPrice' | 'localPrices'>
 
 const CurrencyContext = createContext<CurrencyValue | null>(null)
 
@@ -84,11 +94,18 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       minimumFractionDigits: whole ? 0 : 2,
       maximumFractionDigits: whole ? 0 : 2,
     })
+    const rate = rates[country.currency]
     return {
       country,
       setCountry,
       converted: country.currency !== 'INR',
-      formatPrice: (inr: number) => fmt.format(inr * rates[country.currency]),
+      formatPrice: (inr: number) => fmt.format(inr * rate),
+      formatAmount: (amount: number) => fmt.format(amount),
+      productPrice: (p: PricedProduct) => {
+        const local = country.currency === 'INR' ? undefined : p.localPrices?.[country.currency]
+        if (local) return { price: local.price, originalPrice: local.originalPrice, manual: true }
+        return { price: p.price * rate, originalPrice: p.originalPrice ? p.originalPrice * rate : undefined, manual: false }
+      },
     }
   }, [code, rates, setCountry])
 

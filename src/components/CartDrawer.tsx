@@ -4,11 +4,16 @@ import { Link } from 'react-router-dom'
 import { MAX_QUANTITY_PER_ITEM, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
+import { useCatalog } from '../context/CatalogContext'
 import { useCurrency } from '../context/CurrencyContext'
 
 export default function CartDrawer() {
-  const { formatPrice } = useCurrency()
+  const { formatPrice, formatAmount, productPrice } = useCurrency()
   const { lines, isOpen, closeCart, setQuantity, removeLine, subtotal } = useCart()
+  const { getProduct } = useCatalog()
+  // Shown in the shopper's currency; the rupee subtotal is still what is charged.
+  const unitAmount = (l: (typeof lines)[number]) => productPrice(getProduct(l.productId) ?? { price: l.price }).price
+  const shownSubtotal = lines.reduce((sum, l) => sum + unitAmount(l) * l.quantity, 0)
 
   useEffect(() => {
     if (!isOpen) return
@@ -85,7 +90,7 @@ export default function CartDrawer() {
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-                      <span className="text-sm font-semibold">{formatPrice(line.price * line.quantity)}</span>
+                      <span className="text-sm font-semibold">{formatAmount(unitAmount(line) * line.quantity)}</span>
                     </div>
                   </div>
                 </li>
@@ -98,7 +103,7 @@ export default function CartDrawer() {
               </p>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-shreem-gray">Subtotal</span>
-                <span className="text-lg font-semibold">{formatPrice(subtotal)}</span>
+                <span className="text-lg font-semibold">{formatAmount(shownSubtotal)}</span>
               </div>
               <p className="text-xs text-shreem-gray mb-4">
                 Shipping: {shipping ? formatPrice(shipping) : 'Free'}. Pay securely by UPI, card or netbanking.
