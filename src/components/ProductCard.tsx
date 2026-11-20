@@ -15,7 +15,8 @@ interface Props {
 }
 
 export default function ProductCard({ product: p, badges = [], detailed = false, list = false }: Props) {
-  const { formatPrice } = useCurrency()
+  const { formatAmount, productPrice } = useCurrency()
+  const shown = productPrice(p)
   const show = (b: Badge) => badges.includes(b)
 
   return (
@@ -52,9 +53,9 @@ export default function ProductCard({ product: p, badges = [], detailed = false,
             </h3>
             <p className="text-sm text-shreem-gray mt-1 capitalize">{categoryLabel(p)}</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className="font-semibold text-shreem-black">{formatPrice(p.price)}</span>
-              {p.originalPrice && (
-                <span className="text-sm text-shreem-gray line-through">{formatPrice(p.originalPrice)}</span>
+              <span className="font-semibold text-shreem-black">{formatAmount(shown.price)}</span>
+              {shown.originalPrice && (
+                <span className="text-sm text-shreem-gray line-through">{formatAmount(shown.originalPrice)}</span>
               )}
             </div>
             {list && <p className="text-sm text-shreem-gray mt-3 line-clamp-2">{p.description}</p>}
@@ -64,7 +65,7 @@ export default function ProductCard({ product: p, badges = [], detailed = false,
             <h3 className="font-medium text-shreem-black group-hover:text-shreem-gold transition-colors truncate">
               {p.name}
             </h3>
-            <p className="text-sm text-shreem-gray mt-1">{formatPrice(p.price)}</p>
+            <p className="text-sm text-shreem-gray mt-1">{formatAmount(shown.price)}</p>
           </div>
         )}
       </div>

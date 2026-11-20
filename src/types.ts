@@ -21,6 +21,13 @@ export interface Product {
   available: boolean
   /** Units in stock per size. Missing when stock isn't tracked (local catalog). */
   stock?: Record<string, number>
+  /** Admin-set prices by currency code (e.g. USD). Other currencies are converted from the rupee price. */
+  localPrices?: Record<string, LocalPrice>
+}
+
+export interface LocalPrice {
+  price: number
+  originalPrice?: number
 }
 
 export interface CartLine {

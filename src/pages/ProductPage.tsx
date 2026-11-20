@@ -12,7 +12,7 @@ import { useCurrency } from '../context/CurrencyContext'
 import { categoryLabel, openWhatsApp } from '../lib/utils'
 
 export default function ProductPage() {
-  const { formatPrice } = useCurrency()
+  const { formatPrice, formatAmount, productPrice } = useCurrency()
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { products, loading, getProduct } = useCatalog()
@@ -56,7 +56,8 @@ export default function ProductPage() {
   // Old numeric links (/product/3) redirect to the product's slug.
   if (product.id !== id) return <Navigate to={`/product/${product.id}`} replace />
 
-  const { price, originalPrice } = product
+  const { price } = product
+  const shown = productPrice(product)
   // Stock is tracked per size; sizes missing from the stock map are treated as unlimited.
   const stockFor = (s: string) => (product.stock ? (product.stock[s] ?? Infinity) : Infinity)
   const sizeInStock = (s: string) => stockFor(s) > 0
@@ -156,12 +157,12 @@ export default function ProductPage() {
                 </a>
               )}
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-semibold text-shreem-black">{formatPrice(price)}</span>
-                {originalPrice && (
+                <span className="text-2xl font-semibold text-shreem-black">{formatAmount(shown.price)}</span>
+                {shown.originalPrice && (
                   <>
-                    <span className="text-lg text-shreem-gray line-through">{formatPrice(originalPrice)}</span>
+                    <span className="text-lg text-shreem-gray line-through">{formatAmount(shown.originalPrice)}</span>
                     <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
-                      {Math.round((1 - price / originalPrice) * 100)}% OFF
+                      {Math.round((1 - shown.price / shown.originalPrice) * 100)}% OFF
                     </span>
                   </>
                 )}

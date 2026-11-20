@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Category, Product, Style } from '../types'
+import type { Category, LocalPrice, Product, Style } from '../types'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -65,5 +65,36 @@ export async function fetchProducts(): Promise<Product[]> {
     .order('sort_order')
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data as ProductRow[]).map(toProduct)
+  const products = (data as ProductRow[]).map(toProduct)
+
+  // Admin-set prices per currency. Loaded separately so the catalog still works
+  // if this table is missing or unreachable (prices are then converted instead).
+  const { data: prices, error: pricesError } = await supabase.from('product_prices').select('product_id, currency, price, original_price')
+  if (pricesError) {
+    console.warn('Localized prices unavailable, using converted prices:', pricesError.message)
+    return products
+  }
+  const slugById = new Map((data as ProductRow[]).map((r) => [r.id, r.slug]))
+  const bySlug = new Map<string, Record<string, LocalPrice>>()
+  for (const row of prices as ProductPriceRow[]) {
+    const slug = slugById.get(row.product_id)
+    if (!slug) continue
+    const entry = bySlug.get(slug) ?? {}
+    entry[row.currency] = {
+      price: Number(row.price),
+      originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    }
+    bySlug.set(slug, entry)
+  }
+  return products.map((p) => (bySlug.has(p.id) ? { ...p, localPrices: bySlug.get(p.id) } : p))
+}
+
+/** A price an admin set for one product in one currency (table product_prices). */
+export interface ProductPriceRow {
+  id: string
+  product_id: string
+  currency: string
+  price: number
+  original_price: number | null
+  updated_at: string
 }

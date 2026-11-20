@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CURRENCIES, currencySymbols, getLiveRates, isCurrency, toInr, type CurrencyCode, type Rates } from '../lib/fx'
 import { supabase, type ProductRow } from '../lib/supabase'
 import type { Category, Style } from '../types'
+import LocalizedPricesPanel from './LocalizedPricesPanel'
 import { card, input } from './shared'
 
 const MAX_IMAGE_MB = 5
@@ -114,6 +115,8 @@ export default function ProductFormPage() {
   const [error, setError] = useState<string | null>(null)
   const [rates, setRates] = useState<Rates | null>(null)
   const [ratesError, setRatesError] = useState<string | null>(null)
+  // Saved rupee prices, used by the per-currency price panel for converted suggestions.
+  const [savedInr, setSavedInr] = useState<Pick<ProductRow, 'price' | 'original_price'> | null>(null)
 
   // Live exchange rates, needed to convert a non-rupee price to rupees.
   const foreign = form.price_currency !== 'INR'
@@ -138,7 +141,10 @@ export default function ProductFormPage() {
       .single()
       .then(({ data, error }) => {
         if (error) setError(error.message)
-        else setForm(fromRow(data as ProductRow))
+        else {
+          setForm(fromRow(data as ProductRow))
+          setSavedInr({ price: (data as ProductRow).price, original_price: (data as ProductRow).original_price })
+        }
         setLoaded(true)
       })
   }, [id, isNew])
@@ -403,6 +409,8 @@ export default function ProductFormPage() {
               ))}
             </div>
           </section>
+
+          <LocalizedPricesPanel productId={id} inrPrice={savedInr?.price} inrOriginal={savedInr?.original_price} />
         </div>
 
         <div className="space-y-6">

@@ -6,7 +6,7 @@ import { useCurrency } from '../context/CurrencyContext'
 import { matchesQuery } from '../lib/utils'
 
 export default function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { formatPrice } = useCurrency()
+  const { formatAmount, productPrice } = useCurrency()
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const { products } = useCatalog()
@@ -73,7 +73,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
                     <Link to={`/product/${p.id}`} onClick={onClose} className="flex items-center gap-4 py-3 group">
                       <img src={p.images[0]} alt="" className="w-12 h-14 object-cover rounded" />
                       <span className="flex-1 font-medium group-hover:text-shreem-gold transition-colors">{p.name}</span>
-                      <span className="text-sm text-shreem-gray">{formatPrice(p.price)}</span>
+                      <span className="text-sm text-shreem-gray">{formatAmount(productPrice(p).price)}</span>
                     </Link>
                   </li>
                 ))}

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { INDIAN_STATES, shippingFor } from '../../shared/store'
 import { site } from '../config/site'
 import { getCartId, useCart } from '../context/CartContext'
+import { useCatalog } from '../context/CatalogContext'
 import { loadRazorpay, openRazorpay, type RazorpayResponse } from '../lib/razorpay'
 import { supabaseEnabled } from '../lib/supabase'
 import { useCurrency } from '../context/CurrencyContext'
@@ -37,7 +38,8 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 
 export default function CheckoutPage() {
   const { lines, subtotal, clear } = useCart()
-  const { formatPrice, converted, country } = useCurrency()
+  const { formatPrice, formatAmount, productPrice, converted, country } = useCurrency()
+  const { getProduct } = useCatalog()
   const [details, setDetails] = useState<Details>(loadDetails)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +84,10 @@ export default function CheckoutPage() {
   const discount = coupon?.discount ?? 0
   const shipping = shippingFor(subtotal - discount)
   const total = subtotal - discount + shipping
+  // Summary in the shopper's currency (admin-set prices where available); payment is in rupees.
+  const unitAmount = (l: (typeof lines)[number]) => productPrice(getProduct(l.productId) ?? { price: l.price }).price
+  const shownSubtotal = lines.reduce((sum, l) => sum + unitAmount(l) * l.quantity, 0)
+  const shownTotal = shownSubtotal - productPrice({ price: discount }).price + productPrice({ price: shipping }).price
 
   const applyCoupon = async () => {
     if (!couponInput.trim()) return
@@ -268,7 +274,7 @@ export default function CheckoutPage() {
                     <p className="text-sm font-medium">{l.name}</p>
                     <p className="text-xs text-shreem-gray">{[l.size, l.color].filter(Boolean).join(' / ')}</p>
                   </div>
-                  <span className="text-sm">{formatPrice(l.price * l.quantity)}</span>
+                  <span className="text-sm">{formatAmount(unitAmount(l) * l.quantity)}</span>
                 </li>
               ))}
             </ul>
@@ -303,7 +309,7 @@ export default function CheckoutPage() {
             <div className="space-y-2 text-sm border-t border-shreem-black/10 pt-4">
               <div className="flex justify-between">
                 <span className="text-shreem-gray">Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{formatAmount(shownSubtotal)}</span>
               </div>
               {coupon && (
                 <div className="flex justify-between text-green-700">
@@ -322,7 +328,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-base font-semibold pt-2">
                 <span>Total</span>
-                <span>{formatPrice(total)}</span>
+                <span>{formatAmount(shownTotal)}</span>
               </div>
             </div>
 
