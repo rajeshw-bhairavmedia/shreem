@@ -13,6 +13,7 @@ import OrderDetailPage from './OrderDetailPage'
 import OrdersPage from './OrdersPage'
 import ProductFormPage from './ProductFormPage'
 import ProductsPage from './ProductsPage'
+import ResetPasswordPage from './ResetPasswordPage'
 import ReviewsPage from './ReviewsPage'
 
 type AuthState = 'loading' | 'signed-out' | 'not-admin' | 'admin'
@@ -46,6 +47,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 export default function AdminApp() {
   const { state, email } = useAdminAuth()
+  const { pathname } = useLocation()
 
   if (!supabaseEnabled) {
     return (
@@ -57,6 +59,8 @@ export default function AdminApp() {
       </Centered>
     )
   }
+  // Opened from the reset email: works signed out or during the one-time recovery session.
+  if (pathname.replace(/\/$/, '') === '/admin/reset-password') return <ResetPasswordPage />
   if (state === 'loading') return <Centered><p className="text-shreem-gray">Loading…</p></Centered>
   if (state === 'signed-out') return <LoginPage />
   if (state === 'not-admin') {

@@ -16,6 +16,10 @@ export interface ProductRow {
   description: string
   price: number
   original_price: number | null
+  /** Currency the admin typed the price in (price/original_price are always rupees). Added by migration 20261120000000. */
+  price_currency?: string
+  entered_price?: number | null
+  entered_original_price?: number | null
   category: Category
   style: Style | null
   images: string[]
