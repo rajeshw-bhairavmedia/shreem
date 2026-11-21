@@ -1,15 +1,16 @@
 import gsap from 'gsap'
 import { ArrowLeft, Check, RefreshCcw, Share2, Shield, ShoppingBag, Truck, Zap } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import ProductReviews, { Stars, useReviews } from '../components/ProductReviews'
+import SizeGuideModal from '../components/SizeGuideModal'
 import { MAX_QUANTITY_PER_ITEM } from '../../shared/store'
 import { site } from '../config/site'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { useCurrency } from '../context/CurrencyContext'
-import { categoryLabel, openWhatsApp } from '../lib/utils'
+import { categoryLabel } from '../lib/utils'
 
 export default function ProductPage() {
   const { formatPrice, formatAmount, productPrice } = useCurrency()
@@ -25,6 +26,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [imageIndex, setImageIndex] = useState(0)
   const [shared, setShared] = useState(false)
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false)
+  const closeSizeGuide = useCallback(() => setSizeGuideOpen(false), [])
   const imageRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -61,6 +64,10 @@ export default function ProductPage() {
   // Stock is tracked per size; sizes missing from the stock map are treated as unlimited.
   const stockFor = (s: string) => (product.stock ? (product.stock[s] ?? Infinity) : Infinity)
   const sizeInStock = (s: string) => stockFor(s) > 0
+  const chooseSize = (s: string) => {
+    setSize(s)
+    setQuantity((q) => Math.max(1, Math.min(q, stockFor(s), MAX_QUANTITY_PER_ITEM)))
+  }
   const maxQuantity = Math.min(MAX_QUANTITY_PER_ITEM, product.sizes.length ? stockFor(size) : Infinity)
   const available = product.sizes.length ? sizeInStock(size) : product.available
   const lowStock = Number.isFinite(stockFor(size)) && stockFor(size) > 0 && stockFor(size) <= 3
@@ -198,10 +205,7 @@ export default function ProductPage() {
                   <h3 className="text-sm font-medium">
                     Size: <span className="text-shreem-gray">{size}</span>
                   </h3>
-                  <button
-                    onClick={() => openWhatsApp(`Hi! Can you help me with sizing for the ${product.name}?`)}
-                    className="text-sm text-shreem-gold hover:underline"
-                  >
+                  <button type="button" onClick={() => setSizeGuideOpen(true)} className="text-sm text-shreem-gold hover:underline">
                     Size Guide
                   </button>
                 </div>
@@ -209,10 +213,7 @@ export default function ProductPage() {
                   {product.sizes.map((s) => (
                     <button
                       key={s}
-                      onClick={() => {
-                        setSize(s)
-                        setQuantity((q) => Math.max(1, Math.min(q, stockFor(s), MAX_QUANTITY_PER_ITEM)))
-                      }}
+                      onClick={() => chooseSize(s)}
                       className={`min-w-12 h-12 px-3 rounded-lg text-sm font-medium border-2 transition-all duration-300 ${
                         size === s ? 'border-shreem-black bg-shreem-black text-white' : 'border-shreem-black/10 hover:border-shreem-black/30'
                       } ${sizeInStock(s) ? '' : 'line-through opacity-50'}`}
@@ -221,6 +222,21 @@ export default function ProductPage() {
                     </button>
                   ))}
                 </div>
+                <SizeGuideModal
+                  open={sizeGuideOpen}
+                  onClose={closeSizeGuide}
+                  product={{
+                    name: product.name,
+                    image: product.images[0],
+                    price: formatAmount(shown.price),
+                    originalPrice: shown.originalPrice ? formatAmount(shown.originalPrice) : undefined,
+                  }}
+                  sizes={product.sizes}
+                  selected={size}
+                  onSelect={chooseSize}
+                  isAvailable={sizeInStock}
+                  category={product.category}
+                />
               </div>
             )}
 
